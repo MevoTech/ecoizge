@@ -1,0 +1,11 @@
+.env
+*.env
+secrets/
+data/raw/pilot/
+models/
+*.pt
+*.bin
+*.safetensors
+__pycache__/
+.venv/
+.ipynb_checkpoints/
