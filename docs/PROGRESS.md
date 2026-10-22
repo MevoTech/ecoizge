@@ -2,6 +2,31 @@
 
 Yalnızca gerçekten koşulmuş komutların sonuçları yazılır. En yeni kayıt en üstte.
 
+## 2026-10-23 · Rapor derlemi: ağ izniyle indirme
+
+Komut: `python tools/rapor_derlemi.py indir --hedef /home/claude/derlem --manifest …/KAYNAKLAR.csv --buyuk` (container, 4 geçiş). Ağ iznini kullanıcı verdi.
+
+**Sonuç (container):** 418/424 `dogrulandi`.
+- Dil: `tr` 414, `belirsiz` 3, `en` 1.
+  - `en`: Arçelik 2022.
+  - `belirsiz`: Kardemir 2025 (ABBYY ile taranmış), QNB Yatırım 2025, Bereket Sigorta 2024.
+- Kalan 2 `hata`, ikisi de boyut farkı: Pınar Süt 2024 ve TKYB 2024.
+- Manifest repoda: `data/raw/public/KAYNAKLAR.csv`.
+
+**Kullanıcının makinesi:** 195 rapor `dogrulandi`, 665 MB (`yerlestir` ile yeniden doğrulandı). Aktarım hızı düşük: 7 dosyalık bir grup (yaklaşık 28 MB) zaman aşımına düştü. Kalanın nasıl aktarılacağını kullanıcı seçecek.
+
+**Testlerin ve denemenin bulduğu sorunlar** (her biri için önce kırmızı test yazıldı):
+1. **KAP eki ve bazı KGK PDF'lerinin başında 27 baytlık Java serileştirme öneki var** (`ac ed 00 05 …`). İmza artık ilk 1024 baytta aranıyor; PDF okuyucular da böyle arıyor.
+2. **Vekil üzerinden büyük dosyalar 192 baytın katları kadar eksik geliyor** (Tüpraş 2024, ENKA 2024 vb.). Boyut denetimi yakaladı. Dosya artık önce `.part` olarak doğrulanıyor, yalnızca sağlam olanı kalıcı ada taşınıyor. Silme izni gerekmiyor.
+3. **KGK dosya adlarının bir kısmı ayrışık Unicode (NFD) ya da karışık biçimde.** NFC ile kodlanan adres `302 → Error404` dönüyor. 8 adres sayfadaki ham `href`'ten düzeltildi.
+4. **YÖKAK sunucusu sertifika zincirini eksik gönderiyor** (yalnızca yaprak sertifika). Eksik Sectigo DV R36 ara sertifikası crt.sh'den alındı ve sistemdeki R46 köküyle doğrulandı (`openssl verify: OK`). TLS doğrulaması açık kaldı.
+5. **Önceki koşudan kalan hata notu, başarılı doğrulamadan sonra da kalıyordu.** Hata notu artık kaynak notundan ayrı tutuluyor (`HATA:` öneki) ve başarıda temizleniyor.
+6. **Tekrar tekrar düşen büyük bir dosya kuyruğu tıkıyordu.** Artık önce hiç denenmemiş satırlar işleniyor.
+
+| Komut | Sonuç |
+|---|---|
+| `python tools/check_all.py` | 6/6 GEÇTİ · 194 test geçti |
+
 ## 2026-10-22 (3) · Rapor derlemi (S03) ve ilk gerçek çıkarım (S04)
 
 **Kaynak listesi.** `data/raw/public/KAYNAKLAR.csv`, 424 satır. Erişim tarihi: 2026-10-22.

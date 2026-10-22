@@ -131,8 +131,10 @@ def slug(metin: str) -> str:
 
 
 def pdf_mi(yol: Path) -> bool:
+    """PDF imzası ilk 1024 baytta mı? Okuyucular da öyle arar; bazı KGK dosyalarının başında
+    27 baytlık önek var (Kardemir, Klimasan 2025)."""
     with open(yol, "rb") as f:
-        return f.read(5) == b"%PDF-"
+        return b"%PDF-" in f.read(1024)
 
 
 def sha256(yol: Path) -> str:
@@ -183,11 +185,25 @@ def ilk_sayfalar_metni(yol: Path, son_sayfa: int = 8) -> str | None:
     return _komut(["pdftotext", "-f", "1", "-l", str(son_sayfa), "-enc", "UTF-8", str(yol), "-"])
 
 
+HATA_ON = "HATA: "
+
+
+def not_ekle(notlar: str, hata: str) -> str:
+    """Kaynak notunu korur, önceki hata notunu yenisiyle değiştirir (boş hata: yalnızca temizler)."""
+    taban = notlar.split("; " + HATA_ON)[0]
+    taban = "" if taban.startswith(HATA_ON) else taban
+    if not hata:
+        return taban
+    return f"{taban}; {HATA_ON}{hata}" if taban else HATA_ON + hata
+
+
 def dogrula(yol: Path, satir: dict) -> dict:
     """Bir dosyayı doğrular ve manifest satırının doğrulama alanlarını döndürür."""
     sonuc = {"boyut": str(yol.stat().st_size), "sha256": "", "sayfa": "", "dil": "", "durum": "hata"}
     if not pdf_mi(yol):
-        sonuc["notlar"] = "PDF imzası yok (hata sayfası indirilmiş olabilir)"
+        sonuc["notlar"] = not_ekle(
+            satir.get("notlar", ""), "PDF imzası yok (hata sayfası indirilmiş olabilir)"
+        )
         return sonuc
     sonuc["sha256"] = sha256(yol)
     sonuc["sayfa"] = sayfa_sayisi(yol)
@@ -195,9 +211,12 @@ def dogrula(yol: Path, satir: dict) -> dict:
     sonuc["dil"] = dil_tahmini(metin) if metin is not None else ""
     beklenen = satir.get("beklenen_boyut", "")
     if beklenen and beklenen != sonuc["boyut"]:
-        sonuc["notlar"] = f"boyut farklı: beklenen {beklenen}, gelen {sonuc['boyut']}"
+        sonuc["notlar"] = not_ekle(
+            satir.get("notlar", ""), f"boyut farklı: beklenen {beklenen}, gelen {sonuc['boyut']}"
+        )
         return sonuc
     sonuc["durum"] = "dogrulandi"
+    sonuc["notlar"] = not_ekle(satir.get("notlar", ""), "")
     sonuc["erisim_tarihi"] = satir.get("erisim_tarihi") or date.today().isoformat()
     return sonuc
 
@@ -266,16 +285,14 @@ UA = "Mozilla/5.0 (EcoIzge bitirme projesi; kamu raporu derlemi)"
 
 
 def _indir_url(url: str, hedef: Path, zaman_asimi: int = 120) -> None:
-    """URL'yi `hedef`e indirir. HTTPS_PROXY ortam değişkenine uyar (urllib)."""
+    """URL'yi `hedef`e yazar. HTTPS_PROXY ve SSL_CERT_FILE ortam değişkenlerine uyar (urllib)."""
     from urllib.request import Request, urlopen
 
-    gecici = hedef.with_name(hedef.name + ".part")
     with (
         urlopen(Request(url, headers={"User-Agent": UA}), timeout=zaman_asimi) as yanit,
-        open(gecici, "wb") as f,
+        open(hedef, "wb") as f,
     ):
         shutil.copyfileobj(yanit, f, 1 << 20)
-    gecici.replace(hedef)
 
 
 def indir(
@@ -288,7 +305,8 @@ def indir(
     """
     satirlar = oku(manifest)
     sayac: Counter = Counter()
-    for s in satirlar:
+    # Önce hiç denenmemiş satırlar, sonra hatalılar: tekrar tekrar düşen büyük bir dosya kuyruğu tıkamasın.
+    for s in sorted(satirlar, key=lambda r: r["durum"] == "hata"):
         if s["durum"] == "dogrulandi" or s["kategori"] not in kategoriler:
             continue
         if not buyuk and s.get("beklenen_boyut") and int(s["beklenen_boyut"]) > BUYUK_DOSYA:
@@ -299,11 +317,18 @@ def indir(
         yol = hedef / s["kategori"] / s["dosya_adi"]
         yol.parent.mkdir(parents=True, exist_ok=True)
         try:
-            if not yol.exists():
-                _indir_url(s["url"], yol)
-            s.update(dogrula(yol, s))
+            if yol.exists():
+                s.update(dogrula(yol, s))
+            else:
+                # Önce .part'a indir ve doğrula; yalnızca sağlam dosya kalıcı ada taşınır.
+                # Böylece silme izni gerekmez: bozuk .part bir sonraki denemede üzerine yazılır.
+                gecici = yol.with_name(yol.name + ".part")
+                _indir_url(s["url"], gecici)
+                s.update(dogrula(gecici, s))
+                if s["durum"] == "dogrulandi":
+                    gecici.replace(yol)
         except OSError as e:  # URLError, HTTPError, zaman aşımı OSError alt sınıflarıdır
-            s.update(durum="hata", notlar=f"indirilemedi: {e}")
+            s.update(durum="hata", notlar=not_ekle(s.get("notlar", ""), f"indirilemedi: {e}"))
         sayac[s["durum"]] += 1
         yaz(manifest, satirlar)
     yaz(manifest, satirlar)

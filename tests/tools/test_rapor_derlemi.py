@@ -186,3 +186,61 @@ def test_indir_kaldigi_yerden_devam_eder(tmp_path, poppler_yok, monkeypatch):
     istenen.clear()
     rd.indir(tmp_path / "h", m, kategoriler=("sirket",))
     assert istenen == ["https://x/kirik.pdf"]  # doğrulanmış dosya yeniden indirilmez
+
+
+def test_pdf_imzasi_ilk_1024_baytta_kabul_edilir(tmp_path):
+    """KGK'deki Kardemir ve Klimasan 2025 PDF'lerinin başında 27 baytlık Java serileştirme
+    öneki var; PDF okuyucular imzayı ilk 1024 baytta arar (2026-10-22'de bulundu)."""
+    yol = tmp_path / "a.pdf"
+    yol.write_bytes(b"\xac\xed\x00\x05ur\x00\x02[B" + b"\x00" * 17 + PDF)
+    assert rd.pdf_mi(yol)
+    yol.write_bytes(b"x" * 1100 + PDF)
+    assert not rd.pdf_mi(yol)
+
+
+def test_indir_html_hata_sayfasini_silip_yeniden_dener(tmp_path, poppler_yok, monkeypatch):
+    """KGK zaman zaman PDF yerine 1.499 baytlık Error404 sayfası döndürüyor (2026-10-22)."""
+    yanitlar = [HTML, PDF]
+    monkeypatch.setattr(rd, "_indir_url", lambda url, hedef: hedef.write_bytes(yanitlar.pop(0)))
+    m = _manifest(tmp_path, [_satir()])
+    assert rd.indir(tmp_path / "h", m) == {"hata": 1}
+    assert not (tmp_path / "h" / "sirket" / "ecoizge__sirket-ornek-2025.pdf").exists()
+    assert rd.indir(tmp_path / "h", m) == {"dogrulandi": 1}
+
+
+def test_indir_eksik_aktarimi_silip_yeniden_dener(tmp_path, poppler_yok, monkeypatch):
+    """Vekil üzerinden indirilen 5 büyük dosyada 192 bayt eksik geldi; boyut denetimi yakaladı
+    (Tüpraş 2024 vb., 2026-10-22)."""
+    yanitlar = [PDF[:-3], PDF]
+    monkeypatch.setattr(rd, "_indir_url", lambda url, hedef: hedef.write_bytes(yanitlar.pop(0)))
+    m = _manifest(tmp_path, [_satir(beklenen_boyut=str(len(PDF)))])
+    assert rd.indir(tmp_path / "h", m) == {"hata": 1}
+    assert rd.indir(tmp_path / "h", m) == {"dogrulandi": 1}
+
+
+def test_not_ekle_kaynak_notunu_korur():
+    n = rd.not_ekle("KGK listesi", "boyut farklı")
+    assert n == "KGK listesi; HATA: boyut farklı"
+    assert rd.not_ekle(n, "PDF imzası yok") == "KGK listesi; HATA: PDF imzası yok"
+    assert rd.not_ekle(n, "") == "KGK listesi"
+    assert rd.not_ekle("", "x") == "HATA: x" and rd.not_ekle("HATA: x", "") == ""
+
+
+def test_indir_once_denenmemisleri_sonra_hatalilari_isler(tmp_path, poppler_yok, monkeypatch):
+    sira = []
+
+    def sahte(url, hedef):
+        sira.append(url)
+        hedef.write_bytes(PDF)
+
+    monkeypatch.setattr(rd, "_indir_url", sahte)
+    m = _manifest(
+        tmp_path,
+        [
+            _satir(rapor_id="a", url="https://x/hatali.pdf", durum="hata"),
+            _satir(rapor_id="b", url="https://x/yeni.pdf", dosya_adi="b.pdf"),
+        ],
+    )
+    rd.indir(tmp_path / "h", m)
+    assert sira == ["https://x/yeni.pdf", "https://x/hatali.pdf"]
+    assert [s["rapor_id"] for s in rd.oku(m)] == ["a", "b"]  # manifest sırası korunur
