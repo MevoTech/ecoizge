@@ -244,3 +244,14 @@ def test_indir_once_denenmemisleri_sonra_hatalilari_isler(tmp_path, poppler_yok,
     rd.indir(tmp_path / "h", m)
     assert sira == ["https://x/yeni.pdf", "https://x/hatali.pdf"]
     assert [s["rapor_id"] for s in rd.oku(m)] == ["a", "b"]  # manifest sırası korunur
+
+
+def test_indir_yarim_kalici_dosyayi_yeniden_indirip_duzeltir(tmp_path, poppler_yok, monkeypatch):
+    """Cihaza aktarım yarıda kesilince kalıcı adla eksik dosya kaldı (Neova 2024, 2026-10-23)."""
+    monkeypatch.setattr(rd, "_indir_url", lambda url, hedef: hedef.write_bytes(PDF))
+    yol = tmp_path / "h" / "sirket" / "ecoizge__sirket-ornek-2025.pdf"
+    yol.parent.mkdir(parents=True)
+    yol.write_bytes(PDF[:10])
+    m = _manifest(tmp_path, [_satir(beklenen_boyut=str(len(PDF)))])
+    assert rd.indir(tmp_path / "h", m) == {"dogrulandi": 1}
+    assert yol.read_bytes() == PDF

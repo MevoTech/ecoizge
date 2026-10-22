@@ -319,14 +319,18 @@ def indir(
         try:
             if yol.exists():
                 s.update(dogrula(yol, s))
-            else:
-                # Önce .part'a indir ve doğrula; yalnızca sağlam dosya kalıcı ada taşınır.
-                # Böylece silme izni gerekmez: bozuk .part bir sonraki denemede üzerine yazılır.
+            if s["durum"] != "dogrulandi":
+                # Önce .part'a indir ve doğrula; yalnızca sağlam dosya kalıcı ada geçer.
+                # Silme izni gerekmez: bozuk .part sonraki denemede, yarım kalmış kalıcı dosya
+                # da içeriği üzerine yazılarak düzelir.
                 gecici = yol.with_name(yol.name + ".part")
                 _indir_url(s["url"], gecici)
                 s.update(dogrula(gecici, s))
                 if s["durum"] == "dogrulandi":
-                    gecici.replace(yol)
+                    if yol.exists():
+                        shutil.copyfile(gecici, yol)
+                    else:
+                        gecici.replace(yol)
         except OSError as e:  # URLError, HTTPError, zaman aşımı OSError alt sınıflarıdır
             s.update(durum="hata", notlar=not_ekle(s.get("notlar", ""), f"indirilemedi: {e}"))
         sayac[s["durum"]] += 1
