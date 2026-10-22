@@ -35,6 +35,7 @@ Ayrıntı: [01_DENETIM_RAPORU.md](01_DENETIM_RAPORU.md) §2, Ç1–Ç12. Uygulam
 - `python tools/check_all.py`: 6/6 adım geçti; Python 3.13'te ve CI ile aynı temiz 3.11 ortamında.
 - 127 test geçti; 1760 tutarlılık kontrolü geçti, 0 hata.
 - Mutasyon denemesi: 9/9 yakalandı.
+- GitHub Actions (run 39697479060): kalite kapısı ve gitleaks taraması başarılı.
 
 ## 5. Kalan riskler (doğrulanmamış, başarılı sayılmayan)
 
@@ -44,4 +45,3 @@ Ayrıntı: [01_DENETIM_RAPORU.md](01_DENETIM_RAPORU.md) §2, Ç1–Ç12. Uygulam
 4. **Windows.** Kancalar `python3` çağırıyor; Windows'ta komut adı farklıysa `settings.local.json` ile değiştirilmeli.
 5. **Kip denetimi kural tabanlı.** Karmaşık cümlelerde yanlış alarm verebilir (`verify/tense.py`, modül belgesi).
 6. **ADR-007…ADR-012 önerildi durumunda.** Mehmet'in onayını bekliyor (S08).
-7. **CI ilk koşusu.** Push sonrası sonuç PROGRESS'e eklenecek.

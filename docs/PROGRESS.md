@@ -26,6 +26,7 @@ Ortamlar: (1) Python 3.13; (2) temiz Python 3.11 sanal ortamı + yalnızca `requ
 | `python tools/check_consistency.py` | 1760 kontrol, 0 hata |
 | `python tools/validate_data.py` | katalog_v0 (93 madde) ve şablon: 0 hata |
 | `python tools/gold_manifest.py verify` | Altın küme henüz yok (beklenen) |
+| GitHub Actions run 39697479060 (commit 8757246) | `kalite-kapisi`: success · `gizli-anahtar-taramasi`: success |
 
 **Mutasyon denemesi.** Kod testlerden önce yazıldığı için testlerin hata yakalayabildiği ayrıca sınandı: kodda kasıtlı hata yapıldı, ilgili testler koşuldu, kod geri alındı. 9 mutasyonun 9'u yakalandı.
 
@@ -47,6 +48,5 @@ Geri alma sonrası: 121/121 geçti. Tutarlılık testleri bu denemeden sonra ekl
 
 **Test edilemeyenler:**
 - Claude Code içinde canlı ajan yönlendirmesi ve guard'ın canlı davranışı (S01, 6 senaryo, kullanıcının makinesinde).
-- GitHub Actions ilk koşusu: push sonrası bu kayda eklenecek.
 - `docker compose`: S09'a kadar kurulum yok.
 - Onay arayüzünün gerçek kullanıcıyla denenmesi (S07).
