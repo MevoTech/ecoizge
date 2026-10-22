@@ -16,3 +16,7 @@ data/processed/
 runs/**/*.pt
 .pytest_cache/
 .ruff_cache/
+
+# Kamu rapor PDFleri git dışında; yalnızca manifest (KAYNAKLAR.csv) izlenir
+data/raw/public/**/*.pdf
+data/raw/public/**/*.PDF

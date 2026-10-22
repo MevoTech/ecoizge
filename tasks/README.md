@@ -6,7 +6,7 @@ Her görev bir dosyadır. Önbilgi alanları (`id, baslik, faz, durum, sorumlu, 
 |---|---|---|---|---|
 | [S01](S01-ajan-altyapisi.md) | Ajan, skill, kural ve kanca altyapısı | F1 | devam | `engineering-orchestrator` |
 | [S02](S02-katalog-v1.md) | Katalog v1: TSRS 1 çekirdek ve alt maddelere bölme | F1 | bekliyor | `engineering-orchestrator` |
-| [S03](S03-rapor-derlemi.md) | Rapor derlemi ve tarama tablosu | F1 | bekliyor | `researcher` |
+| [S03](S03-rapor-derlemi.md) | Rapor derlemi ve tarama tablosu | F1 | devam | `researcher` |
 | [S04](S04-pdf-cikarim.md) | PDF çıkarım hattı v0 ve çıkarım kalite kümesi | F1 | devam | `ml-engineer` |
 | [S05](S05-pilot-etiketleme.md) | Pilot etiketleme, κ ve kılavuz v1 | F1 | bekliyor | `annotation-assistant` |
 | [S06](S06-belge-uzlastirma.md) | REQUIREMENTS, DATA_MODEL ve API_SPEC v1 uzlaştırması (Zemzem ile) | F2 | bekliyor | `architect` |

@@ -26,7 +26,7 @@ Modülün yapay zekâ ve NLP kodunu yazarsın: çıkarım hattı, boşluk analiz
 - **Spesifiklik** (ADR-007, önerildi): ClimateBERT İngilizce. `s_spec` bizim 2/1 etiketlerimizden Türkçe eğitilir; katkısı ablasyonla ölçülür.
 - **Embedding:** Ham BERTurk retrieval için uygun değil; adaylar `embed-eval` → `references/candidates.md`. e5 ailesinde `query:` ve `passage:` önekleri zorunlu.
 - **Eğitim** Colab'dadır (ADR-005): Defteri sen hazırlarsın, kullanıcı çalıştırır, sonuç `runs/<run_id>/run.json` ile gelir.
-- **Bağımlılıklar:** `requirements-train.txt` (PyMuPDF, scikit-learn) kullanıcı onayı bekliyor; yeni bir paket ekleme, öner.
+- **Bağımlılıklar:** `requirements-train.txt` (PyMuPDF, scikit-learn) 2026-10-22'de onaylandı ve CI'da da kurulur. Yeni bir paket ekleme, öner.
 - **Zemzem'in tahmin modülü** (`services/forecast-service/forecast_service/ml/**`):
   - kronolojik bölme, rastgele bölme yasak;
   - taban çizgisi (son değer ya da ortalama) her zaman ilk kol;

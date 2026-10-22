@@ -96,3 +96,26 @@ def test_template_header_matches(tmp_path):
     shutil.copy(ROOT / "data/labels/etiket_sablonu.csv", tmp_path / "t.csv")
     assert validate_file(tmp_path / "t.csv") == []
     assert CATALOG_HEADER[0] == "madde_id"
+
+
+def test_r_pdf_01_kaynak_manifesti_dogrulanir(tmp_path):
+    """Derlem manifesti (S03) validate_data üzerinden de denetlenir."""
+    import rapor_derlemi as rd
+
+    iyi = {a: "" for a in rd.ALANLAR}
+    iyi.update(rapor_id="a", kategori="kidr", url="https://x/a.pdf", dosya_adi="a.pdf", durum="planlandi")
+    kotu = dict(iyi, rapor_id="a", url="http://x")
+    p = tmp_path / "KAYNAKLAR.csv"
+    rd.yaz(p, [iyi])
+    assert validate_file(p) == []
+    rd.yaz(p, [iyi, kotu])
+    errs = "\n".join(validate_file(p))
+    assert "yinelenmiş" in errs and "https değil" in errs
+
+
+def test_r_pdf_01_repo_manifesti_gecerli():
+    from validate_data import ROOT, default_files
+
+    m = ROOT / "data" / "raw" / "public" / "KAYNAKLAR.csv"
+    assert m in default_files()
+    assert validate_file(m) == []

@@ -45,6 +45,8 @@ Etiketlemenin, boşluk analizinin ve RAG'in girdisi olan birimleri (paragraf ve 
 - **Üst ve alt bilgi.** Rakamlar normalleştirilip ("Sayfa 3" → "sayfa #") sayfaların en az yarısında tekrarlanan bant metni atılır. İki sayfalık bir PDF'te her iki sayfada da geçen gerçek bir başlık atılabilir. Kısa raporlarda `atilan_ust_alt` sayısını kontrol et.
 - **Başlık tespiti yazı boyutuna dayanır** (gövdenin ≥ 1,15 katı, kısa, noktasız). Başlıkları kalın ama aynı boyutta yazan raporlarda `bolum_basligi` boş kalır (QA'da `basliksiz` işareti). Bu durum etiketlemeyi engellemez, ama bağlam zayıflar.
 - **İki sütunlu sayfalar.** Bloklar dikey konuma göre sıralanır; iki sütunlu düzende sol ve sağ sütun karışabilir. Elle kontrolde "sütun karışması" sütununu doldur.
+- **Sayfa sonunda bölünen tablo** (Derimod 2025, s. 22→23 ve 25→26). Tablonun devamı yeni sayfada ayrı bir birim olur ve başlık satırı olmadığı için ilk sütunları boş gelir (`| | | …`). Etiketlemede iki birimi birlikte oku; birleştirme henüz yapılmıyor (S04 açık konusu).
+- **Kapak ve arka kapak görsel olabilir.** Derimod 2025'te s. 2 ve 60 metinsiz çıktı (`ocr_gerekli`). Bu sayfalar çoğu zaman yalnızca görseldir; OCR ihtiyacına karar vermeden önce PDF'te bak.
 - **Kimlik kayması.** Çıkarım kodu değişince aynı paragrafın sırası değişebilir. Etiketlenmiş bir raporu **yeniden çıkarmadan önce** orkestratöre sor; etiketlerin eşlenmesi gerekir.
 
 ## Örnek

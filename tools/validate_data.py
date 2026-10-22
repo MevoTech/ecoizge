@@ -156,12 +156,17 @@ def validate_file(path: Path, catalog_ids: set[str] | None = None) -> list[str]:
     if header == LABEL_HEADER:
         ids = latest_catalog_ids() if catalog_ids is None else catalog_ids
         return validate_labels(path, header, rows, ids)
+    from rapor_derlemi import ALANLAR, denetle  # derlem manifesti (S03)
+
+    if header == ALANLAR:
+        return [f"{path}: {h}" for h in denetle(rows)]
     return [f"{path}: tanınmayan başlık {header[:4]}…"]
 
 
 def default_files(root: Path = ROOT) -> list[Path]:
     files = sorted((root / "data" / "catalog").glob("*.csv"))
     files += sorted((root / "data" / "labels").rglob("*.csv"))
+    files += sorted((root / "data" / "raw" / "public").glob("KAYNAKLAR.csv"))
     return files
 
 

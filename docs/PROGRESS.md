@@ -2,6 +2,48 @@
 
 Yalnızca gerçekten koşulmuş komutların sonuçları yazılır. En yeni kayıt en üstte.
 
+## 2026-10-22 (3) · Rapor derlemi (S03) ve ilk gerçek çıkarım (S04)
+
+**Kaynak listesi.** `data/raw/public/KAYNAKLAR.csv`, 424 satır. Erişim tarihi: 2026-10-22.
+
+| Kategori | Kaynak | Satır |
+|---|---|---|
+| `sirket` | KGK "Yayımlanan Raporlar" (2025: 45, 2024: 105, 2023: 7, 2022: 41) | 198 |
+| `kap` | KAP ekleri, fintables yansısı (Batıçim, Kalekim, Gersan, Odaş, İsdemir, Şişecam, Arçelik, Çimsa, Petkim, TSKB, Katılımevim; 2025) | 11 |
+| `bist` | Borsa İstanbul rehberleri, faaliyet ve sürdürülebilirlik raporları | 10 |
+| `kidr` | YÖKAK `mis.yokak.gov.tr` 2025 KİDR'leri (GİBTÜ dahil; yurt dışı 2 İngilizce rapor dışarıda) | 205 |
+
+Her URL tarayıcıdan HEAD isteğiyle denetlendi: 424/424 HTTP 200.
+
+**İndirme ve doğrulama.**
+- Komut: `python3 _araclar/rapor_derlemi.py yerlestir --kaynak ~/Downloads --hedef . --manifest KAYNAKLAR.csv` (kullanıcının makinesi, `Documents/ecoizge-raporlar`).
+- Sonuç: 105 rapor `dogrulandi`. Her birinde `%PDF` imzası doğru, SHA-256 yazıldı, boyut KGK/YÖKAK başlığıyla aynı, dil tahmini `tr`.
+- Dağılım: `sirket` 17, `bist` 8, `kidr` 80. Toplam 9.425 sayfa, 169 MB.
+- 319 satır `planlandi` durumunda.
+
+**Çıkarım (S04), container, Python 3.11.**
+
+| Rapor | Birim | Tablo | Atılan üst/alt bilgi | OCR gereken | QA işaretleri |
+|---|---|---|---|---|---|
+| `sirket-derimod-2025` | 240 | 15 | 0 | s. 2, 60 | bozuk_sayi 1, cok_uzun 9, tire_kalintisi 1 |
+| `sirket-akbank-2025` | 856 | 30 | 84 | yok | basliksiz 1, bozuk_sayi 3, cok_uzun 15, tire_kalintisi 1, tablo_sizintisi 4 |
+
+- Komutlar: `pipelines/extract.py` ve `qa_report.py --sayfa 20 --seed 43`.
+- Türkçe harf kaybı: iki raporda 0 (ş/ı/ğ sayısı 7.593 ve 12.270).
+- Elle kontrol tabloları henüz doldurulmadı.
+
+**Testlerin ve denemenin bulduğu sorunlar:**
+1. Tarayıcı panelinden toplu indirme bazı dosyalarda "Farklı kaydet" penceresi açtı ve masaüstü bağlantısı bir kez koptu. Döngüler durduruldu. Toplu indirme bu yolla yapılmayacak; S03 "Kararlar" bölümüne yazıldı.
+2. KGK sunucusu bir süre sonra PDF yerine HTML döndü: 195 istekten 174'ü `PDF değil` ya da `Failed to fetch`. Doğrulayıcı bu dosyaları zaten reddeder: `dogrula` HTML hata sayfasını `hata` yapar ve bunun testi var.
+3. Sayfa sonunda bölünen tablolar ayrı birim oluyor ve devam birimi başlıksız geliyor (Derimod s. 22→23, 25→26). `pdf-extract` Tuzaklar bölümüne yazıldı.
+4. Test yazılırken bulundu: PyMuPDF'in varsayılan Helvetica yazı tipi ş/ı glifini taşımıyor; üretilen test PDF'inde bu harfler `·` olarak çıkıyor. Bu yalnızca test verisini etkiliyor; gerçek raporlarda kayıp yok.
+
+**Bağımlılıklar.** PyMuPDF ve scikit-learn kullanıcı tarafından onaylandı (2026-10-22). İkisi de `requirements-dev.txt`'ye eklendi; CI'da artık atlanmayacaklar.
+
+**Test edilemeyenler:**
+- Kalan 319 raporun indirilmesi. Tarayıcı yolu pencere açıyor. `rapor_derlemi.py indir` dört alan adına ağ izni bekliyor.
+- Elle çıkarım kontrolü (QA tabloları).
+
 ## 2026-10-22 (2) · Skill yeniden düzenlemesi ve ajanların ayrıntılandırılması
 
 Yapılanlar: ayrıntı `docs/analysis/03_SKILL_YENIDEN_DUZENLEME.md`.

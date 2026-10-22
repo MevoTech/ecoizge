@@ -2,7 +2,7 @@
 id: S03
 baslik: Rapor derlemi ve tarama tablosu
 faz: F1
-durum: bekliyor
+durum: devam
 sorumlu: researcher
 skills: []
 gereksinimler: [R-PDF-01]
@@ -43,4 +43,5 @@ Tarama notu.
 
 ## Kararlar
 
-—
+- 2026-10-22: Derlem dört kategoridir: `sirket` (KGK resmî listesi 2022–2025), `kap` (KAP ekleri), `bist` (Borsa İstanbul), `kidr` (YÖKAK 2025). Manifest `data/raw/public/KAYNAKLAR.csv`; PDF'ler git dışında, kullanıcının makinesinde `Documents/ecoizge-raporlar/`. Araç: `tools/rapor_derlemi.py`.
+- 2026-10-22: Tarayıcı paneliyle toplu indirme her dosya için "Farklı kaydet" penceresi açabiliyor; toplu indirme bu yolla yapılmaz. Kalan dosyalar `rapor_derlemi.py indir` ile (ağ izni gerekir) indirilecek.

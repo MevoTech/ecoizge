@@ -1,6 +1,6 @@
-# Eğitim ve çevrimdışı hat bağımlılıkları (Colab ve yerel çıkarım). CI'da kurulmaz.
-# DURUM: yeni bağımlılık — kullanıcı onayı bekliyor (.claude/rules/security.md §İnsan onayı 7).
-# Onaylanırsa ilgili testlerin CI'da koşması için requirements-dev.txt'ye de eklenir.
+# Eğitim ve çevrimdışı hat bağımlılıkları (Colab ve yerel çıkarım).
+# DURUM: onaylandı, Mehmet Güneş, 2026-10-22 ("gerekli olan tüm kütüphaneleri indirebilirsin";
+# .claude/rules/security.md §İnsan onayı 7). İlk iki paket CI'da da kurulur (requirements-dev.txt).
 pymupdf>=1.24        # PDF çıkarımı (pipelines/extract.py). Lisans: AGPL-3.0 — akademik kullanım uygun; ticari dağıtımda yeniden değerlendir.
 scikit-learn>=1.4    # taban çizgisi (gap-baseline)
 numpy>=1.26

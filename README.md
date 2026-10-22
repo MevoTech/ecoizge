@@ -15,7 +15,7 @@ Durum: **F1 (araştırma).** Ne çalışıyor, ne çalışmıyor: [`docs/PROGRES
 ```bash
 pip install -r requirements-dev.txt
 python tools/check_all.py                  # lint + testler + veri + sistem bütünlüğü
-pip install -r requirements-train.txt      # PDF çıkarımı ve taban çizgisi (onay bekliyor)
+pip install -r requirements-train.txt      # Colab ve eğitim bağımlılıkları
 streamlit run services/review-ui/app.py    # etiket onay arayüzü
 ```
 
