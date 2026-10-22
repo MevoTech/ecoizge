@@ -27,7 +27,8 @@ Yapılanlar: ayrıntı `docs/analysis/03_SKILL_YENIDEN_DUZENLEME.md`.
 | ├ `tests/hooks` · `tests/tools` · `tests/contracts` | 50 · 22 · 8 geçti |
 | ├ `tests/pipelines` · `tests/skills` | 6 · 23 geçti |
 | └ `services/report-service/tests` · `services/review-ui/tests` | 57 · 7 geçti |
-| `python tools/check_consistency.py` | 1779 kontrol, 0 hata |
+| `python tools/check_consistency.py` | 1785 kontrol, 0 hata |
+| GitHub Actions run 39706249760 (commit 56a6deb) | `kalite-kapisi`: success · `gizli-anahtar-taramasi`: success |
 
 **Testlerin bulduğu gerçek hatalar:**
 1. PyMuPDF `table.extract()` Türkçe binlik ayracını bozuyor ("12.450" → "12 450 ."). Çözüm: hücre metni hücre alanından okunuyor.
