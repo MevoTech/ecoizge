@@ -1,6 +1,8 @@
 # Analiz Raporu v0: Sunum Eksikleri, Sistem Açıkları ve Önerilen Ajan Mimarisi
 
-Tarih: 2026-10-22 · Kapsam: Mehmet Güneş raporlama modülü (NLP/RAG) + ortak çekirdek · Durum: **onay bekliyor**
+Tarih: 2026-10-22 · Kapsam: Mehmet Güneş raporlama modülü (NLP/RAG) + ortak çekirdek · Durum: **tarihsel (v0)**
+
+> **Not:** Bu raporun 2. bölümündeki bulgular (B1–B20) geçerliliğini koruyor. 3–9. bölümlerdeki ajan, skill ve plan önerisi ise [01_DENETIM_RAPORU.md](01_DENETIM_RAPORU.md) ile değişti. Güncel yapı için `docs/ORCHESTRATION.md`, `docs/COMPETENCY_MATRIX.md` ve `tasks/README.md` belgelerine bakın.
 
 Bu rapor, master prompttaki A–C adımlarının (mevcut durumu analiz et, envanter çıkar, organizasyonu tasarla) çıktısıdır. Ajan, skill ve hook dosyaları bu rapor onaylandıktan sonra yazılacak. Rapordaki her iddianın kaynağı yanında yazılıdır. Kaynağı **[öneri]** olan maddeler benim tasarım önerimdir, doğrulanmış gerçek değildir.
 

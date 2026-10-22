@@ -1,0 +1,48 @@
+{
+  "$schema": "https://json.schemastore.org/claude-code-settings.json",
+  "agent": "engineering-orchestrator",
+  "env": {
+    "CLAUDE_CODE_MAX_SUBAGENT_SPAWN_DEPTH": "1"
+  },
+  "permissions": {
+    "deny": [
+      "Read(./.env)",
+      "Read(./**/.env)",
+      "Read(./secrets/**)",
+      "Read(./data/raw/pilot/**)",
+      "Bash(git push --force *)",
+      "Bash(git push -f *)",
+      "Bash(git reset --hard *)",
+      "Bash(rm -rf *)"
+    ],
+    "ask": [
+      "Bash(git push *)"
+    ]
+  },
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Write|Edit|MultiEdit|NotebookEdit|Read|Grep|Glob|Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 \"$CLAUDE_PROJECT_DIR/.claude/hooks/guard.py\"",
+            "timeout": 15
+          }
+        ]
+      }
+    ],
+    "PostToolUse": [
+      {
+        "matcher": "Write|Edit|MultiEdit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 \"$CLAUDE_PROJECT_DIR/.claude/hooks/format_python.py\"",
+            "timeout": 30
+          }
+        ]
+      }
+    ]
+  }
+}

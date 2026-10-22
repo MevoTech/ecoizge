@@ -1,0 +1,62 @@
+{
+  "_aciklama": "Yazma alanlarının TEK kaynağı. guard.py bu dosyayı okur; tools/check_consistency.py ajan dosyalarındaki 'Yazma alanı' bölümünün bununla birebir aynı olduğunu doğrular. Kalıplar repo köküne göredir; ** her derinliği, * tek yol parçasını eşler.",
+  "protected": [
+    "data/gold/**",
+    "data/labels/reviewed/**",
+    "data/reviews/**",
+    "data/raw/pilot/**",
+    ".env",
+    "**/.env",
+    "**/*.key",
+    "secrets/**"
+  ],
+  "read_protected": [
+    ".env",
+    "**/.env",
+    "**/*.key",
+    "secrets/**",
+    "data/raw/pilot/**"
+  ],
+  "read_denied": {
+    "ml-engineer": ["data/gold/**"],
+    "annotation-assistant": ["data/gold/**", "data/labels/reviewed/**", "data/reviews/**"]
+  },
+  "agents": {
+    "engineering-orchestrator": ["**"],
+    "architect": [
+      "docs/ARCHITECTURE.md",
+      "docs/DATA_MODEL.md",
+      "docs/API_SPEC.md",
+      "docs/DECISIONS.md",
+      "docs/REQUIREMENTS.md",
+      "shared/contracts/**"
+    ],
+    "researcher": ["docs/research/**"],
+    "backend-engineer": [
+      "services/report-service/report_service/api/**",
+      "services/report-service/report_service/db/**",
+      "services/report-service/report_service/core/**",
+      "services/review-ui/review_ui/**",
+      "services/review-ui/app.py",
+      "db/**",
+      "docker/**",
+      "docker-compose.yml",
+      ".github/workflows/**"
+    ],
+    "frontend-engineer": ["web/**"],
+    "ml-engineer": [
+      "services/report-service/report_service/nlp/**",
+      "services/report-service/report_service/generation/**",
+      "services/report-service/report_service/verify/**",
+      "services/forecast-service/forecast_service/ml/**",
+      "pipelines/**",
+      "notebooks/**"
+    ],
+    "annotation-assistant": ["data/labels/proposals/**"],
+    "evaluator": ["reports/experiments/**"],
+    "test-engineer": ["tests/**", "services/*/tests/**"],
+    "code-reviewer": [],
+    "security-auditor": [],
+    "docs-auditor": []
+  }
+}

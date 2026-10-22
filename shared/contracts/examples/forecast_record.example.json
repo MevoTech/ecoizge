@@ -1,0 +1,12 @@
+{
+  "schema_version": "1.0",
+  "kpi": "toplam_emisyon",
+  "birim": "tCO2e",
+  "yil": 2028,
+  "deger": 39870,
+  "veri_turu": "tahmin",
+  "model_id": "xgb-v3.2",
+  "senaryo_id": "S-03 Gunes%40+Surec",
+  "guven_araligi": [37900, 41800],
+  "kaynak": "emisyon-api/senaryo"
+}

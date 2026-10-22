@@ -1,0 +1,6 @@
+# Geliştirme ve CI bağımlılıkları (python tools/check_all.py için yeterli)
+pytest>=8
+ruff>=0.6
+pyyaml>=6
+jsonschema>=4.20
+streamlit>=1.40

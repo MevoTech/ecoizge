@@ -1,0 +1,32 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/MevoTech/ecoizge/shared/contracts/forecast_record.schema.json",
+  "title": "KPI / tahmin kaydı (Emisyon API → Raporlama)",
+  "description": "Sunum S-19 örnek kaydı + schema_version (Teknik Kapsam 5.3). R-API-01, R-INT-01, R-VER-03.",
+  "type": "object",
+  "required": ["schema_version", "kpi", "birim", "yil", "deger", "veri_turu", "kaynak"],
+  "additionalProperties": false,
+  "properties": {
+    "schema_version": {"type": "string", "pattern": "^1\\.\\d+$"},
+    "kpi": {"type": "string", "pattern": "^[a-z0-9_]+$"},
+    "birim": {"type": "string", "minLength": 1},
+    "yil": {"type": "integer", "minimum": 1990, "maximum": 2100},
+    "deger": {"type": "number"},
+    "veri_turu": {"enum": ["gerceklesmis", "tahmin"]},
+    "model_id": {"type": "string", "minLength": 1},
+    "senaryo_id": {"type": "string", "minLength": 1},
+    "guven_araligi": {
+      "type": "array",
+      "items": {"type": "number"},
+      "minItems": 2,
+      "maxItems": 2
+    },
+    "kaynak": {"type": "string", "minLength": 1}
+  },
+  "allOf": [
+    {
+      "if": {"properties": {"veri_turu": {"const": "tahmin"}}},
+      "then": {"required": ["model_id", "senaryo_id", "guven_araligi"]}
+    }
+  ]
+}

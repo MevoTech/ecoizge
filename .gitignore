@@ -9,3 +9,10 @@ models/
 __pycache__/
 .venv/
 .ipynb_checkpoints/
+
+# Gizli ve büyük dosyalar
+data/raw/pilot/
+data/processed/
+runs/**/*.pt
+.pytest_cache/
+.ruff_cache/

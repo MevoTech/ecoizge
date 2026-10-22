@@ -1,0 +1,23 @@
+[project]
+name = "ecoizge"
+version = "0.1.0"
+description = "Sürdürülebilirlik Yönetim ve Güvence Sistemi · GİBTÜ bitirme projesi"
+requires-python = ">=3.11"
+
+[tool.ruff]
+line-length = 110
+target-version = "py311"
+extend-exclude = [".claude/skills"]
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I", "UP", "B", "SIM"]
+ignore = ["E501"]
+
+[tool.ruff.lint.isort]
+known-first-party = ["report_service", "review_ui", "kappa", "validate_data", "gold_manifest", "check_consistency"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests", "services/report-service/tests", "services/review-ui/tests"]
+pythonpath = ["services/report-service", "services/review-ui", "tools"]
+addopts = "-ra"
+markers = ["integration: dış servis (DB, LLM) gerektiren test"]

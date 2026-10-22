@@ -1,0 +1,1 @@
+"""Onay arayüzü paketi."""
