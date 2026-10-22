@@ -27,6 +27,20 @@ Komut: `python tools/rapor_derlemi.py indir --hedef /home/claude/derlem --manife
 |---|---|
 | `python tools/check_all.py` | 6/6 GEÇTİ · 194 test geçti |
 
+**Kullanıcının makinesine aktarım tamamlandı (öncelik kullanıcıdan: TSRS raporları).**
+- Komut: `rapor_derlemi.py yerlestir` (yerinde yeniden doğrulama).
+- Sonuç: 387 rapor `dogrulandi`, 1,3 GB.
+  - TSRS (2024–2025 şirket raporları + KAP ekleri): 161/161.
+  - KİDR 205/205, Borsa İstanbul 10/10.
+  - TSRS öncesi şirket raporları (2022–2023): 11/48. Kalan 37 yalnızca bulutta, istenirse aktarılır.
+- Yöntem notu:
+  - Tek dosyalık paralel aktarım çağrıları, toplu çağrılardan çok daha hızlı.
+  - 30 MB üstü dosyalar 20 MB'lık parçalarla aktarıldı ve cihazda birleştirildi: Tüpraş 2025 (3 parça), TKYB 2024 (10 parça).
+  - Birleştirilen her dosyanın SHA-256'sı container'daki doğrulanmış dosyayla aynı.
+- Cihazda kalanlar:
+  - 18 boşaltılmış `.part` dosyası ve `_araclar/parca/` altında 13 boş parça. Silme izni olmadığı için silinmedi.
+  - İndirilenler'deki geçici tarayıcı dosyaları temizlenmiş: geriye yalnızca kullanıcının kendi `.tmp` dosyası kaldı.
+
 ## 2026-10-22 (3) · Rapor derlemi (S03) ve ilk gerçek çıkarım (S04)
 
 **Kaynak listesi.** `data/raw/public/KAYNAKLAR.csv`, 424 satır. Erişim tarihi: 2026-10-22.
