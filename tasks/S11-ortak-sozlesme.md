@@ -4,7 +4,7 @@ baslik: Ortak JSON sözleşmesi ve iki serviste sözleşme testleri
 faz: F3
 durum: devam
 sorumlu: architect
-skills: [api-contract]
+skills: []
 gereksinimler: [R-API-01, R-INT-01]
 bagimlilik: [S06]
 insan_onayi: Zemzem'in onayı

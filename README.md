@@ -15,6 +15,7 @@ Durum: **F1 (araştırma).** Ne çalışıyor, ne çalışmıyor: [`docs/PROGRES
 ```bash
 pip install -r requirements-dev.txt
 python tools/check_all.py                  # lint + testler + veri + sistem bütünlüğü
+pip install -r requirements-train.txt      # PDF çıkarımı ve taban çizgisi (onay bekliyor)
 streamlit run services/review-ui/app.py    # etiket onay arayüzü
 ```
 
@@ -28,7 +29,9 @@ streamlit run services/review-ui/app.py    # etiket onay arayüzü
 | Tahmin kaydı sözleşmesi | `shared/contracts/forecast_record.schema.json` | `tests/contracts/` |
 | Etiket onay arayüzü | `services/review-ui/` | `services/review-ui/tests/` |
 | κ, altın küme manifesti, veri doğrulayıcı | `tools/` | `tests/tools/` |
-| Claude ajan sistemi (1 ana + 11 alt ajan, 30 skill, kancalar) | `.claude/` | `tests/hooks/`, `tests/tools/test_check_consistency.py` |
+| PDF çıkarımı (paragraf, tablo, başlık, üst/alt bilgi) | `pipelines/extract.py` | `tests/pipelines/` |
+| Unsur kapsama ile madde kararı (ADR-008) | `services/report-service/report_service/nlp/coverage.py` | `services/report-service/tests/test_coverage.py` |
+| Claude ajan sistemi: 1 ana + 11 alt ajan, 12 skill (betikli), kancalar | `.claude/` | `tests/hooks/`, `tests/skills/`, `tests/tools/test_check_consistency.py` |
 
 ## Yapı
 

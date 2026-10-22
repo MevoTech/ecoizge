@@ -28,6 +28,7 @@ LABEL_HEADER = [
     "metin", "madde_id", "karsilama", "guven", "gerekce", "etiketleyen", "kaynak", "tarih",
 ]  # fmt: skip
 
+CATALOG_HEADER_V1 = [*CATALOG_HEADER, "ust_madde"]  # katalog v1: alt unsurlar (ADR-008)
 STANDARTLAR = {"TSRS 1", "TSRS 2", "VSME", "GRI"}
 ZORUNLULUK = {"zorunlu", "koşullu", "isteğe bağlı"}
 VERI_TURU = {"anlatı", "sayısal", "tablo", "karma", "evet/hayır"}
@@ -86,6 +87,11 @@ def validate_catalog(path: Path, header: list[str], rows: list[dict[str, str]]) 
                 errs.append(f"{loc}: {col}={r[col]!r} izinli değil {sorted(allowed)}")
         if not DOGRULAMA_RE.match(r["dogrulama"]):
             errs.append(f"{loc}: dogrulama={r['dogrulama']!r} 'resmi_metin_YYYY-AA-GG' değil")
+    ids = {r["madde_id"] for r in rows}
+    for i, r in enumerate(rows, start=2):
+        parent = r.get("ust_madde", "")
+        if parent and (parent not in ids or parent == r["madde_id"]):
+            errs.append(f"{path.name}:{i}: ust_madde={parent!r} bu katalogda yok ya da kendisi")
     return errs
 
 
@@ -145,7 +151,7 @@ def validate_labels(
 
 def validate_file(path: Path, catalog_ids: set[str] | None = None) -> list[str]:
     header, rows = read_csv(path)
-    if header == CATALOG_HEADER:
+    if header in (CATALOG_HEADER, CATALOG_HEADER_V1):
         return validate_catalog(path, header, rows)
     if header == LABEL_HEADER:
         ids = latest_catalog_ids() if catalog_ids is None else catalog_ids

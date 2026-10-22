@@ -16,7 +16,7 @@
 
 ## Hata prosedürü
 
-1. Hatayı yeniden üret ve en küçük örneğe indir (`debug` skill'i).
+1. Hatayı yeniden üret ve en küçük örneğe indir: tam komut, girdi, beklenen ve gerçek çıktı; değişkenleri tek tek sabitle.
 2. Önce başarısız bir regresyon testi yaz, sonra düzelt.
 3. Aynı yaklaşım iki kez başarısız olursa dur: orkestratör kullanıcıya bulguyu ve seçenekleri sunar.
 4. Bir kontrolü geçirmek için testi, eşiği ya da doğrulayıcıyı gevşetmek yasaktır. Gevşetme yalnızca gerekçeli bir ADR ile yapılır.

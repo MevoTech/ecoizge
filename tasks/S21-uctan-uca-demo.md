@@ -4,7 +4,7 @@ baslik: Uçtan uca demo ve DOCX/PDF dışa aktarım
 faz: F6
 durum: bekliyor
 sorumlu: backend-engineer
-skills: [release-check]
+skills: []
 gereksinimler: [R-EXP-01]
 bagimlilik: [S20]
 insan_onayi: Demo senaryosu

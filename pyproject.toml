@@ -7,7 +7,7 @@ requires-python = ">=3.11"
 [tool.ruff]
 line-length = 110
 target-version = "py311"
-extend-exclude = [".claude/skills"]
+extend-exclude = []
 
 [tool.ruff.lint]
 select = ["E", "F", "W", "I", "UP", "B", "SIM"]
@@ -18,6 +18,6 @@ known-first-party = ["report_service", "review_ui", "kappa", "validate_data", "g
 
 [tool.pytest.ini_options]
 testpaths = ["tests", "services/report-service/tests", "services/review-ui/tests"]
-pythonpath = ["services/report-service", "services/review-ui", "tools"]
+pythonpath = ["services/report-service", "services/review-ui", "tools", "pipelines"]
 addopts = "-ra"
 markers = ["integration: dış servis (DB, LLM) gerektiren test"]

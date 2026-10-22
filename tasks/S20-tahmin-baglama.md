@@ -4,7 +4,7 @@ baslik: Tahmin JSON'unun taslağa bağlanması
 faz: F6
 durum: bekliyor
 sorumlu: backend-engineer
-skills: [api-contract]
+skills: [numeric-verify]
 gereksinimler: [R-INT-01, R-VER-03]
 bagimlilik: [S11, S17]
 insan_onayi: —

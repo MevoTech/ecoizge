@@ -39,12 +39,17 @@ REQUIRED_COMPETENCIES = [
 SUBAGENT_SECTIONS = [
     "Rol ve sınırlar", "Yazma alanı", "Girdi sözleşmesi", "Prosedür", "Çıktı sözleşmesi",
     "Kabul kriterleri", "Kullandığı skill'ler", "Orkestratöre dön",
-    "Yapamayacakları / onay gerektirenler",
+    "Yapamayacakları / onay gerektirenler", "Projeye özgü bilgiler", "Örnek",
 ]  # fmt: skip
 ORCH_SECTIONS = [
     "Sorumluluklar (yalnızca sende)", "Yazma alanı", "Girdi sözleşmesi", "Çıktı sözleşmesi (kullanıcıya)",
     "Hata durumunda", "Kullandığı skill'ler", "Yapamayacakları / onay gerektirenler",
+    "Proje bağlamı", "Örnek",
 ]  # fmt: skip
+SKILL_SECTIONS = ["Adımlar", "Tuzaklar", "Örnek", "Kontrol listesi"]
+CATALOG_ID_RE = re.compile(
+    r"^(?:TSRS\d-[A-Z]{3}-\d+[A-Za-z0-9-]*|VSME-[BC]\d+-[A-Za-z0-9-]+|GRI-\d+[A-Za-z0-9-]*)$"
+)
 TASK_FIELDS = [
     "id", "baslik", "faz", "durum", "sorumlu", "skills", "gereksinimler", "bagimlilik", "insan_onayi",
 ]  # fmt: skip
@@ -53,11 +58,11 @@ TASK_STATES = {"bekliyor", "devam", "tamam", "engelli"}
 # (b) çalışma zamanında üretilen dosyalar (manifest, onay günlüğü, yerel ayar); (c) görev çıktıları.
 # Kuruldukça buradan çıkarılır; liste bilinçli ve kısa tutulur.
 FUTURE_PREFIXES = (
-    "data/gold/", "data/reviews/", ".claude/settings.local.json", "data/catalog/catalog_v1.csv",
-    "web/", "db/", "docker/", "docker-compose.yml", "pipelines/", "data/processed/",
+    "data/gold/", "data/reviews/", ".claude/settings.local.json", "data/catalog/catalog_v1.csv", "reports/experiments/",
+    "web/", "db/", "docker/", "docker-compose.yml", "data/processed/",
     "data/raw/pilot/", "services/forecast-service/", "requirements-train.txt",
     "services/report-service/report_service/api/", "services/report-service/report_service/db/",
-    "services/report-service/report_service/core/", "services/report-service/report_service/nlp/",
+    "services/report-service/report_service/core/",
 )  # fmt: skip
 PATH_ROOTS = (
     ".claude/", "docs/", "tasks/", "tools/", "services/", "shared/", "data/", "tests/",
@@ -93,7 +98,7 @@ def frontmatter(text: str) -> tuple[dict, str]:
 
 
 def section(body: str, title: str) -> str | None:
-    m = re.search(rf"^## {re.escape(title)}\s*$", body, flags=re.M)
+    m = re.search(rf"^## {re.escape(title)}[^\n]*$", body, flags=re.M)
     if not m:
         return None
     rest = body[m.end() :]
@@ -204,6 +209,18 @@ def run(root: Path) -> Report:
         r.check(meta.get("name") == d.name, f"{f}: name={meta.get('name')!r} ≠ {d.name}")
         desc = str(meta.get("description") or "")
         r.check(0 < len(desc) <= 1536, f"{f}: description boş ya da 1536 karakterden uzun")
+        _, sbody = frontmatter(text)
+        for title in SKILL_SECTIONS:
+            r.check(section(sbody, title) is not None, f"{f}: '## {title}' bölümü yok")
+        for tok in set(re.findall(r"`((?:scripts|references|assets)/[^`\s]+)`", sbody)):
+            r.check((d / tok).exists(), f"{f}: skill içi dosya yok `{tok}`")
+        skill_tests = (root / "tests" / "skills").glob("test_*.py")
+        tested = "\n".join(t.read_text(encoding="utf-8") for t in skill_tests)
+        for script in sorted((d / "scripts").glob("*.py")):
+            needle = f'load("{d.name}", "{script.stem}")'
+            r.check(
+                needle in tested, f"{d.name}/scripts/{script.name}: tests/skills altında testi yok ({needle})"
+            )
         skills.add(d.name)
     used = {s for lst in agent_skills.values() for s in lst}
     for a, lst in agent_skills.items():
@@ -227,7 +244,6 @@ def run(root: Path) -> Report:
         msk = re.findall(r"`([a-z0-9-]+)`", cells[idx + 1])
         found.add(comp)
         r.check(agent in agents, f"matris '{comp}': ajan {agent} yok")
-        r.check(bool(msk), f"matris '{comp}': skill yok")
         for s in msk:
             r.check(s in skills, f"matris '{comp}': skill {s} yok")
             r.check(s in agent_skills.get(agent, []), f"matris '{comp}': {s}, {agent} listesinde yok")
@@ -276,6 +292,10 @@ def run(root: Path) -> Report:
     # 9–10: ADR ve yol atıfları
     decisions = (root / "docs" / "DECISIONS.md").read_text(encoding="utf-8")
     adrs = set(re.findall(r"^## (ADR-\d{3})", decisions, flags=re.M))
+    catalogs = sorted((root / "data" / "catalog").glob("catalog_v*.csv"))
+    catalog_ids = set()
+    for c in catalogs:
+        catalog_ids |= {ln.split(",", 1)[0] for ln in c.read_text(encoding="utf-8").splitlines()[1:] if ln}
     scan = [root / "CLAUDE.md", root / "README.md"]
     scan += sorted((root / ".claude").rglob("*.md"))
     scan += sorted((root / "docs").glob("*.md")) + sorted((root / "tasks").glob("*.md"))
@@ -293,6 +313,9 @@ def run(root: Path) -> Report:
             ):
                 continue
             r.check((root / tok).exists(), f"{rel}: var olmayan yol `{tok}`")
+        for tok in set(re.findall(r"`([^`\n]+)`", text)):
+            if CATALOG_ID_RE.match(tok) and catalog_ids:
+                r.check(tok in catalog_ids, f"{rel}: katalogda olmayan madde `{tok}`")
         for link in re.findall(r"\]\(([^)]+)\)", text):
             if link.startswith(("http", "#", "mailto:")):
                 continue

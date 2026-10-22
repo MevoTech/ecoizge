@@ -4,7 +4,7 @@ baslik: Ajan, skill, kural ve kanca altyapısı
 faz: F1
 durum: devam
 sorumlu: engineering-orchestrator
-skills: [plan-task, docs-sync, release-check]
+skills: [adr]
 gereksinimler: [R-AGT-01, R-SEC-02]
 bagimlilik: []
 insan_onayi: Canlı yönlendirme testlerinin sonucunu Mehmet onaylar

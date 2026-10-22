@@ -2,9 +2,9 @@
 id: S04
 baslik: PDF çıkarım hattı v0 ve çıkarım kalite kümesi
 faz: F1
-durum: bekliyor
+durum: devam
 sorumlu: ml-engineer
-skills: [pdf-extract, computer-vision]
+skills: [pdf-extract]
 gereksinimler: [R-PDF-01, R-PDF-02]
 bagimlilik: [S03]
 insan_onayi: QA kümesinin elle kontrolü
@@ -20,11 +20,11 @@ insan_onayi: QA kümesinin elle kontrolü
 
 ## Çıktı
 
-`pipelines/extract.py`, `data/processed/<rapor>/paragraphs.jsonl`, QA raporu (evaluator).
+`pipelines/extract.py` [uygulandı, sentetik PDF testli]; `data/processed/<rapor>/paragraphs.jsonl` ve QA raporu [bekliyor: gerçek PDF].
 
 ## Kabul kriterleri
 
-- Çıktı şeması `pdf-extract` skill'indeki gibi
+- Çıktı şeması `pdf-extract` skill'indeki gibi [karşılandı: `tests/pipelines/test_extract.py`]
 - QA kümesinde (20 sayfa) hata türleri sayılmış
 - PyMuPDF / pdfplumber seçimi ölçümle, ADR
 

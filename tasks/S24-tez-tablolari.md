@@ -4,7 +4,7 @@ baslik: Tez tabloları ve figürleri koşu kayıtlarından
 faz: F8
 durum: bekliyor
 sorumlu: evaluator
-skills: [experiment-run, docs-sync]
+skills: [experiment-run]
 gereksinimler: [R-REP-01]
 bagimlilik: [S22, S23]
 insan_onayi: Tez metni

@@ -26,4 +26,4 @@ Sunum S-19'daki örnek kayıtta `schema_version` alanı yoktu. Örnek, bu alan e
 | `GET /sensitivity/{run}` | forecast | — | tornado, SHAP, Sobol verisi | `/api/emisyon/duyarlilik` | — |
 | `POST /exports/forecast-to-report` | report | senaryo_id, hedef madde | bağlanan kayıt sayısı | `/api/rapor/aktar` | R-INT-01 |
 
-Değişiklik prosedürü: `api-contract` skill'i. Zemzem'i etkileyen her değişiklik onun PR onayını ister.
+Değişiklik prosedürü: `.claude/agents/architect.md` → Prosedür adım 5 (şema, örnek, `schema_version`). Zemzem'i etkileyen her değişiklik onun PR onayını ister.

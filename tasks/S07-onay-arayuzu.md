@@ -4,7 +4,7 @@ baslik: Onay arayüzü v1 ve toplu ön etiketleme
 faz: F2
 durum: devam
 sorumlu: backend-engineer
-skills: [label-review, test-engineering]
+skills: [label-review]
 gereksinimler: [R-HIL-01]
 bagimlilik: [S01]
 insan_onayi: Arayüzün kullanılabilirliğini Mehmet onaylar

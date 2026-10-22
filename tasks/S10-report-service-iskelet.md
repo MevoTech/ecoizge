@@ -4,7 +4,7 @@ baslik: report-service iskeleti, POST /reports, iş tablosu, yükleme güvenliğ
 faz: F3
 durum: bekliyor
 sorumlu: backend-engineer
-skills: [api-contract, security-audit]
+skills: []
 gereksinimler: [R-API-02, R-SEC-04]
 bagimlilik: [S09, S04]
 insan_onayi: —

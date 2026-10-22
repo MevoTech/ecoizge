@@ -4,7 +4,7 @@ baslik: Rapor derlemi ve tarama tablosu
 faz: F1
 durum: bekliyor
 sorumlu: researcher
-skills: [tech-research]
+skills: []
 gereksinimler: [R-PDF-01]
 bagimlilik: []
 insan_onayi: Hangi raporların kullanılacağı

@@ -4,7 +4,7 @@ baslik: 'Katalog v1: TSRS 1 çekirdek ve alt maddelere bölme'
 faz: F1
 durum: bekliyor
 sorumlu: engineering-orchestrator
-skills: [catalog-update, tech-research]
+skills: [catalog-update]
 gereksinimler: [R-KAT-01, R-GAP-03]
 bagimlilik: [S01]
 insan_onayi: Katalog değişikliği ve kapsam (ADR-010)

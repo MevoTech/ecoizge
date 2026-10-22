@@ -7,12 +7,12 @@ Durum etiketleri: `[uygulandı]` (kod + test var) · `[kısmi]` · `[hedef]` (ta
 | Bileşen | Teknoloji | Sahip | Durum |
 |---|---|---|---|
 | Web arayüzü | React + TypeScript | Mehmet (`frontend-engineer`) | `[hedef]` F3+ |
-| `report-service` | Python, FastAPI | Mehmet | `[kısmi]`: `verify/numbers.py`, `verify/tense.py`, `generation/placeholders.py` uygulandı; API, DB ve NLP katmanları hedef |
+| `report-service` | Python, FastAPI | Mehmet | `[kısmi]`: `verify/numbers.py`, `verify/tense.py`, `generation/placeholders.py`, `nlp/coverage.py` uygulandı; API ve DB katmanları hedef |
 | `forecast-service` | Python, FastAPI | Zemzem | `[hedef]` |
 | Onay arayüzü | Streamlit (yerel) | Mehmet (`backend-engineer`) | `[kısmi]`: etiket kuyruğu |
 | Veri katmanı | PostgreSQL + pgvector | Ortak | `[hedef]` F3 |
 | Ortak sözleşme | JSON Schema 2020-12 | Ortak | `[kısmi]`: `shared/contracts/forecast_record.schema.json` |
-| Çevrimdışı hatlar | Python betikleri, Colab | Her biri kendi modülünde | `[hedef]` |
+| Çevrimdışı hatlar | Python betikleri, Colab | Her biri kendi modülünde | `[kısmi]`: `pipelines/extract.py` (PDF çıkarımı), skill betikleri (örneklem, taban çizgisi, metrikler, run.json); gerçek veri bekliyor |
 | Ajan sistemi | Claude Code ajanları, skill'ler, kancalar | Mehmet | `[uygulandı]` (canlı yönlendirme testi bekliyor, S01) |
 
 Servisler birbirini doğrudan çağırmaz; ortak veritabanı ve JSON sözleşmesi üzerinden konuşur (Teknik Kapsam 5).
@@ -37,10 +37,10 @@ PDF ──▶ [1] çıkarım ──▶ report_chunk ──▶ [2] eşleme (embed
 
 | Adım | Durum | Gereksinim |
 |---|---|---|
-| 1 Çıkarım | `[hedef]` S04 | R-PDF-01, R-PDF-02 |
-| 2 Eşleme | `[hedef]` S13, S14, S16 | R-GAP-01…04, R-RET-01 |
+| 1 Çıkarım | `[kısmi]` S04: `pipelines/extract.py` + otomatik QA, sentetik PDF testli | R-PDF-01, R-PDF-02 |
+| 2 Eşleme | `[kısmi]` S14: TF-IDF+LR taban çizgisi (skill betiği) ve unsur kapsama (`nlp/coverage.py`) · `[hedef]` S13, S16 | R-GAP-01…04, R-RET-01 |
 | 3 Retrieval | `[hedef]` S18 | R-RET-02 |
-| 4 Üretim | `[hedef]` S17 | R-GEN-01, R-GEN-02, R-SEC-01 |
+| 4 Üretim | `[kısmi]` istem kurucu (`rag-draft/scripts/build_prompt.py`, enjeksiyon temizleme) · `[hedef]` LLM çağrısı S17 | R-GEN-01, R-GEN-02, R-SEC-01 |
 | 5 Doğrulama | `[uygulandı]` yer tutucu, serbest sayı, kip · `[hedef]` kaynaksız cümle (R-VER-02) | R-GEN-03, R-VER-01, R-VER-03 |
 | 6 Doldurma | `[uygulandı]` | R-GEN-03, R-GEN-04 |
 

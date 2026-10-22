@@ -1,0 +1,24 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Eğitim / deney koşu kaydı (runs/<run_id>/run.json) · R-REP-01, ADR-005",
+  "type": "object",
+  "required": ["run_id", "git_sha", "gorev", "veri_surumu", "katalog_surumu", "tohum", "paketler", "donanim", "metrikler", "durum", "olusturma"],
+  "additionalProperties": false,
+  "properties": {
+    "run_id": {"type": "string", "pattern": "^\\d{8}-\\d{6}-[a-z0-9-]+$"},
+    "git_sha": {"type": "string", "pattern": "^([0-9a-f]{7,40}|bilinmiyor)$"},
+    "gorev": {"type": "string", "pattern": "^S\\d{2}$"},
+    "aciklama": {"type": "string"},
+    "veri_surumu": {"type": "string", "minLength": 1},
+    "katalog_surumu": {"type": "string", "pattern": "^catalog_v\\d+$"},
+    "altin_kume_kullanildi": {"type": "boolean"},
+    "tohum": {"type": "integer"},
+    "paketler": {"type": "object", "additionalProperties": {"type": "string"}},
+    "donanim": {"type": "string"},
+    "parametreler": {"type": "object"},
+    "metrikler": {"type": "object", "minProperties": 1},
+    "model_yolu": {"type": ["string", "null"]},
+    "durum": {"enum": ["onay_bekliyor", "kabul", "red"]},
+    "olusturma": {"type": "string"}
+  }
+}

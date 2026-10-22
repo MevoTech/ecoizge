@@ -4,7 +4,7 @@ baslik: Docker Compose, PostgreSQL + pgvector, Alembic
 faz: F3
 durum: bekliyor
 sorumlu: backend-engineer
-skills: [db-migration, release-check, systems-diagnostics]
+skills: []
 gereksinimler: [R-SEC-04]
 bagimlilik: [S06]
 insan_onayi: Ortak şema migration'ı

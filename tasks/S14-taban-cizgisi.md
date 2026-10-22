@@ -2,9 +2,9 @@
 id: S14
 baslik: TF-IDF + LR taban çizgisi, gruplu CV, eşikler, unsur kapsama
 faz: F4
-durum: bekliyor
+durum: devam
 sorumlu: ml-engineer
-skills: [gap-baseline, algorithms-ds]
+skills: [gap-baseline, colab-train]
 gereksinimler: [R-GAP-01, R-GAP-02, R-GAP-03, R-EVL-01]
 bagimlilik: [S05, S02]
 insan_onayi: Eşiklerin kabulü
@@ -24,8 +24,8 @@ Model, eşikler, run.json.
 
 ## Kabul kriterleri
 
-- Rapor bazında bölünme testli
-- Unsur kapsama toplaması birim testli
+- Rapor bazında bölünme testli [karşılandı: `tests/skills/test_skill_scripts.py`, sentetik veri]
+- Unsur kapsama toplaması birim testli [karşılandı: `services/report-service/tests/test_coverage.py`]
 - F1 rapor bazında ortalama ± aralık
 
 ## Test komutu

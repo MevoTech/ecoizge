@@ -4,7 +4,7 @@ baslik: REQUIREMENTS, DATA_MODEL ve API_SPEC v1 uzlaştırması (Zemzem ile)
 faz: F2
 durum: bekliyor
 sorumlu: architect
-skills: [api-contract, db-migration, adr]
+skills: [adr]
 gereksinimler: [R-KAT-02, R-API-01, R-INT-01]
 bagimlilik: [S01]
 insan_onayi: Zemzem'in onayı

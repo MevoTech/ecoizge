@@ -17,7 +17,7 @@
 
 | İş | Komut |
 |---|---|
-| Kurulum | `pip install -r requirements-dev.txt` |
+| Kurulum | `pip install -r requirements-dev.txt` (çıkarım ve eğitim için ayrıca `requirements-train.txt`) |
 | Tüm kalite kapısı (bitti tanımı) | `python tools/check_all.py` |
 | Testler | `python -m pytest -q` |
 | Veri doğrulama | `python tools/validate_data.py [dosya]` |

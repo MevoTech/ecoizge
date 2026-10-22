@@ -4,7 +4,7 @@ baslik: Türkçe sayı normalleştirici ve kip denetimi
 faz: F4
 durum: tamam
 sorumlu: ml-engineer
-skills: [numeric-verify, test-engineering]
+skills: [numeric-verify]
 gereksinimler: [R-VER-01, R-VER-03]
 bagimlilik: []
 insan_onayi: —

@@ -10,6 +10,8 @@ Tek komut: `python tools/check_all.py`. Yerelde ve CI'da (`.github/workflows/ci.
 | Birim | Doğrulayıcı, κ, manifest | `tests/tools/` | `[uygulandı]` |
 | Kanca | guard: izinli ve engelli yazma, okuma, Bash; bozuk girdi | `tests/hooks/test_guard.py` | `[uygulandı]` |
 | Sözleşme | `forecast_record` şeması | `tests/contracts/` | `[uygulandı]` |
+| Çıkarım | Sentetik Türkçe PDF: üst/alt bilgi, başlık, tireleme, tablo, OCR gereken sayfa | `tests/pipelines/` | `[uygulandı]` (PyMuPDF gerekir; CI'da onaya kadar atlanır) |
+| Skill betikleri | Her `scripts/*.py` en az bir test; denetleyici zorunlu tutar | `tests/skills/` | `[uygulandı]` (taban çizgisi testi scikit-learn gerektirir) |
 | Arayüz | Onay mantığı + Streamlit AppTest | `services/review-ui/tests/` | `[uygulandı]` |
 | Sistem bütünlüğü | Ajan, skill, kural, belge ve görev tutarlılığı; bozulan kopyanın yakalanması | `tests/tools/test_check_consistency.py` + `tools/check_consistency.py` | `[uygulandı]` |
 | Lint ve biçim | ruff | `pyproject.toml` | `[uygulandı]` |
