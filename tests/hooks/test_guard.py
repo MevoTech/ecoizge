@@ -94,6 +94,8 @@ def test_path_traversal_resolved():
         ("security-auditor", "secrets/api.key", True),
         ("ml-engineer", "data/gold/test.csv", True),
         ("annotation-assistant", "data/labels/reviewed/x.csv", True),
+        ("annotation-assistant", "data/labels/blind/mehmet-gunes/pilot_v0.csv", True),  # körleme (S05)
+        ("annotation-assistant", "data/labels/pilot/orneklem.jsonl", False),
         ("evaluator", "data/gold/test.csv", False),
         ("ml-engineer", "data/catalog/catalog_v0.csv", False),
         (None, ".env.example", False),

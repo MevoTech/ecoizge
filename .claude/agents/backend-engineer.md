@@ -36,6 +36,7 @@ model: inherit
 - `services/report-service/report_service/core/**`
 - `services/review-ui/review_ui/**`
 - `services/review-ui/app.py`
+- `services/review-ui/ekranlar/**`
 - `db/**`
 - `docker/**`
 - `docker-compose.yml`

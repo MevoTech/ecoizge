@@ -1,0 +1,452 @@
+{
+ "sirket-akbank-2025-p011-29": {
+  "skor": 0.435,
+  "aday_maddeler": [
+   "TSRS2-RSK-25c",
+   "TSRS2-RSK-25a",
+   "TSRS2-STR-14a-i"
+  ],
+  "secim": "aday"
+ },
+ "sirket-derimod-2025-p014-04": {
+  "skor": 0.405,
+  "aday_maddeler": [
+   "TSRS2-STR-10c",
+   "TSRS2-STR-10d",
+   "TSRS2-STR-16d"
+  ],
+  "secim": "aday"
+ },
+ "sirket-qua-granite-2025-p003-10": {
+  "skor": 0.183,
+  "aday_maddeler": [
+   "TSRS2-STR-22b-iii",
+   "VSME-B1-24a",
+   "VSME-B1-24c"
+  ],
+  "secim": "rastgele"
+ },
+ "sirket-derimod-2025-p004-06": {
+  "skor": 0.392,
+  "aday_maddeler": [
+   "TSRS2-YON-06a-iv",
+   "TSRS2-STR-13a",
+   "TSRS2-STR-16a"
+  ],
+  "secim": "aday"
+ },
+ "sirket-akbank-2025-p020-20": {
+  "skor": 0.471,
+  "aday_maddeler": [
+   "TSRS2-STR-10c",
+   "TSRS2-STR-16d",
+   "TSRS2-STR-22b-iii"
+  ],
+  "secim": "aday"
+ },
+ "sirket-qua-granite-2025-p035-08": {
+  "skor": 0.469,
+  "aday_maddeler": [
+   "TSRS2-STR-10c",
+   "VSME-C4-58",
+   "TSRS2-STR-16d"
+  ],
+  "secim": "aday"
+ },
+ "sirket-akbank-2025-p020-23": {
+  "skor": 0.317,
+  "aday_maddeler": [
+   "TSRS2-STR-16d",
+   "TSRS2-STR-16a",
+   "TSRS2-STR-13a"
+  ],
+  "secim": "rastgele"
+ },
+ "sirket-derimod-2025-p057-01": {
+  "skor": 0.29,
+  "aday_maddeler": [
+   "TSRS2-MET-29a-i",
+   "TSRS2-MET-36a-b",
+   "VSME-B3-31"
+  ],
+  "secim": "rastgele"
+ },
+ "sirket-derimod-2025-p029-01": {
+  "skor": 0.424,
+  "aday_maddeler": [
+   "TSRS2-STR-22a",
+   "TSRS2-RSK-25a",
+   "TSRS2-RSK-25b"
+  ],
+  "secim": "aday"
+ },
+ "sirket-qua-granite-2025-p037-05": {
+  "skor": 0.203,
+  "aday_maddeler": [
+   "TSRS2-MET-29f",
+   "TSRS2-STR-16b",
+   "TSRS2-RSK-25a"
+  ],
+  "secim": "rastgele"
+ },
+ "sirket-qua-granite-2025-p038-15": {
+  "skor": 0.319,
+  "aday_maddeler": [
+   "TSRS2-MET-29d",
+   "TSRS2-MET-29e",
+   "TSRS2-MET-29c"
+  ],
+  "secim": "rastgele"
+ },
+ "sirket-qua-granite-2025-p003-24": {
+  "skor": 0.462,
+  "aday_maddeler": [
+   "TSRS2-STR-16a",
+   "TSRS2-STR-16d",
+   "TSRS2-STR-10a"
+  ],
+  "secim": "aday"
+ },
+ "sirket-derimod-2025-p012-05": {
+  "skor": 0.209,
+  "aday_maddeler": [
+   "TSRS2-STR-12",
+   "TSRS2-MET-32",
+   "TSRS2-YON-06a-iv"
+  ],
+  "secim": "rastgele"
+ },
+ "sirket-akbank-2025-p016-06": {
+  "skor": 0.456,
+  "aday_maddeler": [
+   "TSRS2-STR-13a",
+   "TSRS2-STR-14a-i",
+   "TSRS2-STR-22a"
+  ],
+  "secim": "aday"
+ },
+ "sirket-akbank-2025-p032-37": {
+  "skor": 0.513,
+  "aday_maddeler": [
+   "TSRS2-STR-13a",
+   "TSRS2-RSK-25b",
+   "TSRS2-MET-32"
+  ],
+  "secim": "aday"
+ },
+ "sirket-derimod-2025-p027-02": {
+  "skor": 0.163,
+  "aday_maddeler": [
+   "VSME-C9-65",
+   "TSRS2-STR-14a-iv",
+   "TSRS2-STR-14b"
+  ],
+  "secim": "rastgele"
+ },
+ "sirket-qua-granite-2025-p013-29": {
+  "skor": 0.464,
+  "aday_maddeler": [
+   "TSRS2-STR-13b",
+   "TSRS2-STR-13a",
+   "TSRS2-STR-10a"
+  ],
+  "secim": "aday"
+ },
+ "sirket-akbank-2025-p026-12": {
+  "skor": 0.462,
+  "aday_maddeler": [
+   "TSRS2-STR-14a-i",
+   "TSRS2-STR-13a",
+   "TSRS2-MET-29e"
+  ],
+  "secim": "aday"
+ },
+ "sirket-qua-granite-2025-p030-17": {
+  "skor": 0.573,
+  "aday_maddeler": [
+   "TSRS2-STR-16a",
+   "TSRS2-STR-13a",
+   "TSRS2-STR-10a"
+  ],
+  "secim": "aday"
+ },
+ "sirket-derimod-2025-p028-04": {
+  "skor": 0.464,
+  "aday_maddeler": [
+   "TSRS2-STR-22a",
+   "TSRS2-STR-13a",
+   "TSRS2-RSK-25a"
+  ],
+  "secim": "aday"
+ },
+ "sirket-klimasan-2025-p033-07": {
+  "skor": 0.188,
+  "aday_maddeler": [
+   "TSRS2-STR-22b-iii",
+   "TSRS2-YON-06a-v",
+   "TSRS2-STR-22b-i"
+  ],
+  "secim": "rastgele"
+ },
+ "sirket-derimod-2025-p029-04": {
+  "skor": 0.434,
+  "aday_maddeler": [
+   "VSME-C4-58",
+   "TSRS2-STR-13a",
+   "TSRS2-STR-10a"
+  ],
+  "secim": "aday"
+ },
+ "sirket-derimod-2025-p017-03": {
+  "skor": 0.4,
+  "aday_maddeler": [
+   "VSME-C4-58",
+   "TSRS2-STR-16d",
+   "TSRS2-STR-21"
+  ],
+  "secim": "aday"
+ },
+ "sirket-klimasan-2025-p024-02": {
+  "skor": 0.609,
+  "aday_maddeler": [
+   "TSRS2-STR-13a",
+   "TSRS2-STR-22a",
+   "TSRS2-STR-13b"
+  ],
+  "secim": "aday"
+ },
+ "sirket-qua-granite-2025-p012-08": {
+  "skor": 0.157,
+  "aday_maddeler": [
+   "TSRS2-STR-14a-iv",
+   "VSME-C8-63",
+   "TSRS2-STR-10b"
+  ],
+  "secim": "rastgele"
+ },
+ "sirket-klimasan-2025-p039-07": {
+  "skor": 0.171,
+  "aday_maddeler": [
+   "VSME-B7-38",
+   "VSME-B7-37",
+   "TSRS2-STR-14b"
+  ],
+  "secim": "rastgele"
+ },
+ "sirket-derimod-2025-p006-02": {
+  "skor": 0.404,
+  "aday_maddeler": [
+   "TSRS2-YON-06a-iv",
+   "TSRS2-YON-06a",
+   "TSRS2-RSK-25c"
+  ],
+  "secim": "aday"
+ },
+ "sirket-klimasan-2025-p011-07": {
+  "skor": 0.471,
+  "aday_maddeler": [
+   "TSRS2-STR-10d",
+   "TSRS2-STR-22b-iii",
+   "VSME-C4-58"
+  ],
+  "secim": "aday"
+ },
+ "sirket-akbank-2025-p043-02": {
+  "skor": 0.25,
+  "aday_maddeler": [
+   "TSRS2-STR-22b-iii",
+   "TSRS2-STR-12",
+   "TSRS2-MET-29a-iv"
+  ],
+  "secim": "rastgele"
+ },
+ "sirket-akbank-2025-p016-04": {
+  "skor": 0.464,
+  "aday_maddeler": [
+   "TSRS2-STR-13a",
+   "TSRS2-YON-06a-iv",
+   "TSRS2-STR-14a-i"
+  ],
+  "secim": "aday"
+ },
+ "sirket-qua-granite-2025-p006-13": {
+  "skor": 0.14,
+  "aday_maddeler": [
+   "TSRS2-MET-36d",
+   "VSME-B2-26",
+   "TSRS2-STR-14a-v"
+  ],
+  "secim": "rastgele"
+ },
+ "sirket-qua-granite-2025-p032-21": {
+  "skor": 0.29,
+  "aday_maddeler": [
+   "TSRS2-RSK-25a",
+   "TSRS2-RSK-25b",
+   "TSRS2-STR-22b-ii"
+  ],
+  "secim": "rastgele"
+ },
+ "sirket-qua-granite-2025-p038-02": {
+  "skor": 0.467,
+  "aday_maddeler": [
+   "TSRS2-MET-29a-i",
+   "VSME-B3-31",
+   "TSRS2-MET-36a-b"
+  ],
+  "secim": "aday"
+ },
+ "sirket-akbank-2025-p012-18": {
+  "skor": 0.173,
+  "aday_maddeler": [
+   "TSRS2-MET-34",
+   "TSRS2-MET-32",
+   "TSRS2-MET-29d"
+  ],
+  "secim": "rastgele"
+ },
+ "sirket-klimasan-2025-p042-04": {
+  "skor": 0.496,
+  "aday_maddeler": [
+   "TSRS2-STR-16a",
+   "TSRS2-STR-13a",
+   "TSRS2-STR-10a"
+  ],
+  "secim": "aday"
+ },
+ "sirket-klimasan-2025-p005-09": {
+  "skor": 0.502,
+  "aday_maddeler": [
+   "TSRS2-STR-13a",
+   "TSRS2-STR-14a-i",
+   "TSRS2-STR-10a"
+  ],
+  "secim": "aday"
+ },
+ "sirket-akbank-2025-p033-13": {
+  "skor": 0.543,
+  "aday_maddeler": [
+   "TSRS2-STR-13a",
+   "TSRS2-STR-16a",
+   "VSME-C4-58"
+  ],
+  "secim": "aday"
+ },
+ "sirket-klimasan-2025-p042-09": {
+  "skor": 0.181,
+  "aday_maddeler": [
+   "TSRS2-STR-22b-i",
+   "TSRS2-STR-13a",
+   "TSRS2-STR-14a-ii"
+  ],
+  "secim": "rastgele"
+ },
+ "sirket-qua-granite-2025-p042-08": {
+  "skor": 0.169,
+  "aday_maddeler": [
+   "VSME-C8-63",
+   "TSRS2-MET-29d",
+   "TSRS2-MET-29c"
+  ],
+  "secim": "rastgele"
+ },
+ "sirket-klimasan-2025-p037-29": {
+  "skor": 0.148,
+  "aday_maddeler": [
+   "TSRS2-STR-14b",
+   "VSME-B1-24e",
+   "VSME-B8-40"
+  ],
+  "secim": "rastgele"
+ },
+ "sirket-derimod-2025-p037-03": {
+  "skor": 0.489,
+  "aday_maddeler": [
+   "TSRS2-STR-13a",
+   "TSRS2-STR-10a",
+   "VSME-C4-58"
+  ],
+  "secim": "aday"
+ },
+ "sirket-klimasan-2025-p005-12": {
+  "skor": 0.49,
+  "aday_maddeler": [
+   "TSRS2-RSK-25a",
+   "TSRS2-RSK-25b",
+   "TSRS2-RSK-25c"
+  ],
+  "secim": "aday"
+ },
+ "sirket-klimasan-2025-p005-02": {
+  "skor": 0.49,
+  "aday_maddeler": [
+   "TSRS2-STR-16a",
+   "TSRS2-STR-13a",
+   "TSRS2-YON-06a-iv"
+  ],
+  "secim": "aday"
+ },
+ "sirket-akbank-2025-p011-32": {
+  "skor": 0.447,
+  "aday_maddeler": [
+   "TSRS2-STR-14a-i",
+   "TSRS2-RSK-25a",
+   "TSRS2-RSK-25b"
+  ],
+  "secim": "aday"
+ },
+ "sirket-qua-granite-2025-p002-02": {
+  "skor": 0.477,
+  "aday_maddeler": [
+   "TSRS2-RSK-25c",
+   "TSRS2-YON-06a-iii",
+   "TSRS2-YON-06b-ii"
+  ],
+  "secim": "aday"
+ },
+ "sirket-qua-granite-2025-p032-01": {
+  "skor": 0.478,
+  "aday_maddeler": [
+   "TSRS2-RSK-25b",
+   "TSRS2-RSK-25c",
+   "TSRS2-RSK-25a"
+  ],
+  "secim": "aday"
+ },
+ "sirket-klimasan-2025-p027-21": {
+  "skor": 0.172,
+  "aday_maddeler": [
+   "TSRS2-MET-29a-vi",
+   "VSME-C8-64",
+   "VSME-B6-35"
+  ],
+  "secim": "rastgele"
+ },
+ "sirket-klimasan-2025-p027-15": {
+  "skor": 0.162,
+  "aday_maddeler": [
+   "TSRS2-MET-29a-vi",
+   "VSME-B10-42c",
+   "TSRS2-STR-14b"
+  ],
+  "secim": "rastgele"
+ },
+ "sirket-klimasan-2025-p046-08": {
+  "skor": 0.209,
+  "aday_maddeler": [
+   "TSRS2-RSK-25a",
+   "TSRS2-MET-29c",
+   "VSME-B6-36"
+  ],
+  "secim": "rastgele"
+ },
+ "sirket-klimasan-2025-p005-13": {
+  "skor": 0.456,
+  "aday_maddeler": [
+   "TSRS2-YON-06a-v",
+   "TSRS2-STR-16d",
+   "TSRS2-MET-35"
+  ],
+  "secim": "aday"
+ }
+}

@@ -20,6 +20,7 @@ from __future__ import annotations
 import argparse
 import csv
 import json
+import math
 import random
 import re
 import sys
@@ -78,12 +79,25 @@ def tokens(text: str) -> set[str]:
     return {w[:5] for w in words if len(w) > 2 and w not in STOP}
 
 
-def load_paragraphs(paths: list[Path], min_len: int) -> list[dict]:
+def filtrele(paragraphs: list[dict], min_len: int, max_len: int) -> list[dict]:
+    """Çok kısa (başlık, sayfa artığı) ve çok uzun (bölünmemiş tablo) birimleri dışarıda bırakır.
+    Uzun birimler hem etiketlemesi zor hem de çıkarım hatası adayıdır (QA `cok_uzun`)."""
+    gorulen: set[str] = set()
+    out = []
+    for u in paragraphs:
+        anahtar = " ".join(tr_lower(u["metin"]).split())
+        if min_len <= len(u["metin"]) <= max_len and anahtar not in gorulen:
+            gorulen.add(anahtar)  # aynı tablo başlığı ya da tekrar eden kalıp metin bir kez girer
+            out.append(u)
+    return out
+
+
+def load_paragraphs(paths: list[Path], min_len: int, max_len: int = 1500) -> list[dict]:
     out = []
     for p in paths:
         with p.open(encoding="utf-8") as fh:
             out += [json.loads(line) for line in fh if line.strip()]
-    return [u for u in out if len(u["metin"]) >= min_len]
+    return filtrele(out, min_len, max_len)
 
 
 def item_tokens(catalog: Path) -> dict[str, set[str]]:
@@ -92,8 +106,12 @@ def item_tokens(catalog: Path) -> dict[str, set[str]]:
 
 
 def score(par: set[str], item: set[str]) -> float:
-    """Madde terimlerinin paragrafta bulunma oranı."""
-    return len(par & item) / len(item) if item else 0.0
+    """Ochiai benzerliği: |ortak| / sqrt(|paragraf| · |madde|).
+
+    Yalnız madde terimlerinin kapsanma oranı uzun birimleri ödüllendiriyordu: pilotta seçilen
+    50 birimin ortalaması 3.792 karakterdi, havuz medyanı 209 (2026-10-23).
+    """
+    return len(par & item) / math.sqrt(len(par) * len(item)) if par and item else 0.0
 
 
 def sample(paragraphs: list[dict], items: dict[str, set[str]], n_aday: int, n_rastgele: int, seed: int):
@@ -132,11 +150,12 @@ def main(argv: list[str]) -> int:
     ap.add_argument("--aday", type=int, default=30)
     ap.add_argument("--rastgele", type=int, default=20)
     ap.add_argument("--seed", type=int, default=43)
-    ap.add_argument("--min-len", type=int, default=40)
+    ap.add_argument("--min-len", type=int, default=100)  # 100 altı çoğunlukla başlık
+    ap.add_argument("--max-len", type=int, default=1500)
     ap.add_argument("--out", type=Path, required=True)
     ap.add_argument("--hints", type=Path, required=True)
     args = ap.parse_args(argv)
-    paras = load_paragraphs(args.paragraphs, args.min_len)
+    paras = load_paragraphs(args.paragraphs, args.min_len, args.max_len)
     rows, hints = sample(paras, item_tokens(args.catalog), args.aday, args.rastgele, args.seed)
     args.out.parent.mkdir(parents=True, exist_ok=True)
     with args.out.open("w", encoding="utf-8") as fh:

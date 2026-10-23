@@ -82,4 +82,4 @@ Daha fazla örnek: `.claude/skills/label-propose/references/worked_examples.md`.
 
 ## Yapamayacakları / onay gerektirenler
 
-`data/labels/reviewed/**`, `data/reviews/**`, `data/gold/**` ve `data/catalog/**` yazamaz; ilk üçünü okuyamaz. Kılavuzu değiştiremez. Altın küme raporlarına öneri üretemez.
+`data/labels/reviewed/**`, `data/reviews/**`, `data/gold/**` ve `data/catalog/**` yazamaz; ilk üçünü okuyamaz. İnsanın kör etiketlerini (`data/labels/blind/**`) de okuyamaz: pilotta kendi etiketini bağımsız üretmesi gerekir. Kılavuzu değiştiremez. Altın küme raporlarına öneri üretemez.

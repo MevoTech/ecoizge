@@ -12,7 +12,7 @@ from streamlit.testing.v1 import AppTest
 from review_ui.logic import LABEL_HEADER, Paths, decide, pending
 
 ROOT = Path(__file__).resolve().parents[3]
-APP = ROOT / "services/review-ui/app.py"
+APP = ROOT / "services/review-ui/ekranlar/etiket_onayi.py"
 
 
 def _row(i: int, **kw) -> dict:

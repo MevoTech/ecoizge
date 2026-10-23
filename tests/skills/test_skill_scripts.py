@@ -37,6 +37,34 @@ def _paragraphs(n_reports=3, per_report=12):
     return out
 
 
+def test_sample_pilot_uzun_birimi_odullendirmez():
+    """Gerçek pilotta (4 rapor, 2026-10-23) seçilen 50 birimin ortalaması 3.792 karakterdi
+    (havuz medyanı 209); 22'si uzun tabloydu. Örtüşme oranı uzunluğu ödüllendiriyordu."""
+    sp = load("label-propose", "sample_pilot")
+    madde = sp.tokens("Kapsam 1 sera gazı emisyonları ton CO2e")
+    kisa = sp.tokens("Kapsam 1 sera gazı emisyonlarımız 12.450 ton CO2e olarak hesaplanmıştır.")
+    uzun = sp.tokens(
+        "Kapsam 1 sera gazı emisyonları ton CO2e "
+        + " ".join(f"kelime{i} konu{i} tablo{i}" for i in range(200))
+    )
+    assert sp.score(kisa, madde) > sp.score(uzun, madde)
+
+
+def test_sample_pilot_uzun_birimleri_disarida_birakir():
+    sp = load("label-propose", "sample_pilot")
+    paras = _paragraphs()
+    paras[0] = paras[0] | {"metin": paras[0]["metin"] * 50}
+    assert all(len(u["metin"]) <= 1500 for u in sp.filtrele(paras, min_len=40, max_len=1500))
+
+
+def test_sample_pilot_yinelenen_metni_bir_kez_alir():
+    """Ochiai'den sonra aynı tablo başlığı ("Risk Adı Risk Tanımı …") pilota 5 kez girdi (2026-10-23)."""
+    sp = load("label-propose", "sample_pilot")
+    paras = _paragraphs(n_reports=1, per_report=4)
+    kopya = paras[0] | {"paragraf_id": "kopya", "metin": "  " + paras[0]["metin"].replace(" ", "  ") + "\n"}
+    assert [u["paragraf_id"] for u in sp.filtrele(paras + [kopya], 40, 1500)].count("kopya") == 0
+
+
 # ---------- label-propose ----------
 def test_sample_pilot_split_blind_and_reproducible(tmp_path):
     sp = load("label-propose", "sample_pilot")

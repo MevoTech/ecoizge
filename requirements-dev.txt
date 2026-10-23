@@ -3,7 +3,7 @@ pytest>=8
 ruff==0.16.9         # biçim kontrolü sürüme bağlı; yerel ve CI aynı olsun
 pyyaml>=6
 jsonschema>=4.20
-streamlit>=1.40
+streamlit>=1.50
 # Çıkarım ve taban çizgisi testleri CI'da atlanmasın diye (onay: 2026-10-22, requirements-train.txt)
 pymupdf>=1.24
 scikit-learn>=1.4

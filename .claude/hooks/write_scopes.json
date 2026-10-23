@@ -18,11 +18,20 @@
     "data/raw/pilot/**"
   ],
   "read_denied": {
-    "ml-engineer": ["data/gold/**"],
-    "annotation-assistant": ["data/gold/**", "data/labels/reviewed/**", "data/reviews/**"]
+    "ml-engineer": [
+      "data/gold/**"
+    ],
+    "annotation-assistant": [
+      "data/gold/**",
+      "data/labels/reviewed/**",
+      "data/reviews/**",
+      "data/labels/blind/**"
+    ]
   },
   "agents": {
-    "engineering-orchestrator": ["**"],
+    "engineering-orchestrator": [
+      "**"
+    ],
     "architect": [
       "docs/ARCHITECTURE.md",
       "docs/DATA_MODEL.md",
@@ -31,19 +40,24 @@
       "docs/REQUIREMENTS.md",
       "shared/contracts/**"
     ],
-    "researcher": ["docs/research/**"],
+    "researcher": [
+      "docs/research/**"
+    ],
     "backend-engineer": [
       "services/report-service/report_service/api/**",
       "services/report-service/report_service/db/**",
       "services/report-service/report_service/core/**",
       "services/review-ui/review_ui/**",
       "services/review-ui/app.py",
+      "services/review-ui/ekranlar/**",
       "db/**",
       "docker/**",
       "docker-compose.yml",
       ".github/workflows/**"
     ],
-    "frontend-engineer": ["web/**"],
+    "frontend-engineer": [
+      "web/**"
+    ],
     "ml-engineer": [
       "services/report-service/report_service/nlp/**",
       "services/report-service/report_service/generation/**",
@@ -52,9 +66,16 @@
       "pipelines/**",
       "notebooks/**"
     ],
-    "annotation-assistant": ["data/labels/proposals/**"],
-    "evaluator": ["reports/experiments/**"],
-    "test-engineer": ["tests/**", "services/*/tests/**"],
+    "annotation-assistant": [
+      "data/labels/proposals/**"
+    ],
+    "evaluator": [
+      "reports/experiments/**"
+    ],
+    "test-engineer": [
+      "tests/**",
+      "services/*/tests/**"
+    ],
     "code-reviewer": [],
     "security-auditor": [],
     "docs-auditor": []
