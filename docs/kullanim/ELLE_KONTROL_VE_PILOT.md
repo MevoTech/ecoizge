@@ -34,6 +34,7 @@ Rapor PDF'leri `C:\Users\mevog\Documents\ecoizge-raporlar` klasöründe; arayüz
 - Siyah bir pencere açılır; arayüz çalıştığı sürece **o pencereyi kapatma**.
 - Birkaç saniye sonra tarayıcıda `http://localhost:8501` açılır. Açılmazsa adresi elle yaz.
 - İşin bitince siyah pencereyi kapat.
+- Güncellemeden sonra (ya da ekran garip davranırsa) `arayuz.bat`'a yeniden çift tıkla: açık olan eski arayüzü kapatıp yenisini açar.
 
 Elle açmak istersen Anaconda Prompt'ta:
 ```
