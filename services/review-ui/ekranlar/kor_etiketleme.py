@@ -1,12 +1,15 @@
 """Kör etiketleme (S05): pilot paragraflarını modelin etiketini görmeden etiketle.
 
 Bu sayfa öneri dosyalarını ve onay günlüğünü okumaz (körleme). Çıktı:
-data/labels/blind/<ad>/pilot_v0.csv (+ örneklemin SHA-256 özeti, örneklem değişirse kayıt durur)
+data/labels/blind/<ad>/pilot_v0.csv (paragraf × madde × düzey; kappa ve doğrulayıcıyla uyumlu)
+      + pilot_v0.paragraf.jsonl (beyan türü, kanıt cümlesi, belirsizlik, süre; ADR-013)
+      + örneklemin SHA-256 özeti (örneklem değişirse kayıt durur)
 """
 
 from __future__ import annotations
 
 import sys
+import time
 from pathlib import Path
 
 import streamlit as st
@@ -66,14 +69,20 @@ birim = orneklem[int(sira) - 1]
 pid = birim["paragraf_id"]
 onceki = {r["madde_id"]: r["karsilama"] for r in yapilan.get(pid, []) if r["madde_id"] != "NONE"}
 onceki_gerekce = next((r["gerekce"] for r in yapilan.get(pid, [])), "")
+onceki_kayit = kor.paragraf_kayitlari(cikti).get(pid, {})
+cumleler = kor.cumlelere_bol(birim["metin"], birim["tur"])
+# Süre: paragraf ilk kez ekrana geldiğinde başlar, kayıtta biter (yeniden düzeltmede yeniden başlar).
+st.session_state.setdefault(f"_basla-{pid}", time.monotonic())
 
-with st.expander("Karşılama düzeyleri (kılavuz §3–4)", expanded=not yapilan):
+with st.expander("Nasıl karar veririm? (kılavuz §3–4)", expanded=not yapilan):
     st.markdown(
+        "**Sıra:** 1) beyan türü → 2) maddeler ve düzey → 3) her madde için kanıt cümlesi → 4) emin değilsen nedeni.\n\n"
         "- **2 · Tam:** maddenin istediği unsurların **tamamı**, şirkete özgü ve somut. Sayısal maddede değer + birim + dönem.\n"
-        "- **1 · Kısmi:** konuya değiniyor ama unsur eksik, ifade genel ya da birim/dönem/kapsam eksik. **Emin değilsen 1 ver ve gerekçe yaz.**\n"
+        "- **1 · Kısmi:** konuya değiniyor ama unsur eksik, ifade genel ya da birim/dönem/kapsam eksik. Emin değilsen 1 ver, **Emin değilim**'i işaretle.\n"
         "- **U · Uygulanamaz:** koşullu madde için rapor, uygulanamaz olduğunu **gerekçesiyle** söylüyor.\n"
         "- **Hiçbir madde seçmezsen** paragraf NONE (ilgisiz) kaydedilir.\n"
-        "- Çıkarım bozuksa (kırık tablo, karışık metin) etiketleme; gerekçeye **çıkarım hatası** yaz ve NONE kaydet."
+        "- **Kanıt cümlesi:** 2 ya da 1 verdiğin her madde için o maddeyi karşılayan cümle(ler)in numarası.\n"
+        "- Çıkarım bozuksa (kırık tablo, karışık metin) madde seçme; nedenlerden **Çıkarım hatası**'nı seç ve NONE kaydet."
     )
 
 st.caption(
@@ -82,7 +91,16 @@ st.caption(
     + (" · ✓ etiketlendi" if pid in yapilan else "")
 )
 with st.container(border=True):
-    st.markdown(md_kacis(birim["metin"]))
+    st.markdown("  \n".join(f"**[{i}]** {md_kacis(c)}" for i, c in enumerate(cumleler, start=1)))
+
+beyan = st.multiselect(
+    "Beyan türü (bu paragraf ne söylüyor? birden çok seçebilirsin)",
+    list(kor.BEYAN_TURLERI),
+    default=None if f"beyan-{pid}" in st.session_state else onceki_kayit.get("beyan_turleri", []),
+    format_func=kor.BEYAN_TURLERI.get,
+    key=f"beyan-{pid}",
+    placeholder="Politika, hedef, gerçekleşen sonuç…",
+)
 
 st.subheader("Bu paragraf hangi maddeleri karşılıyor?")
 f1, f2, f3 = st.columns([1, 1, 2])
@@ -108,6 +126,7 @@ secili = st.multiselect(
 )
 
 secimler: dict[str, str | None] = {}
+kanit: dict[str, list[int]] = {}
 for mid in secili:
     m = katalog.get(mid, {})
     with st.container(border=True):
@@ -121,16 +140,52 @@ for mid in secili:
             horizontal=True,
             key=f"seviye-{pid}-{mid}",
         )
+        if secimler[mid] in ("2", "1"):
+            anahtar = f"kanit-{pid}-{mid}"
+            kanit[mid] = st.multiselect(
+                "Kanıt cümlesi (bu maddeyi hangi cümle karşılıyor?)",
+                list(range(1, len(cumleler) + 1)),
+                default=None if anahtar in st.session_state else onceki_kayit.get("kanit", {}).get(mid, []),
+                format_func=lambda i: (
+                    f"[{i}] {cumleler[i - 1][:70]}{'…' if len(cumleler[i - 1]) > 70 else ''}"
+                ),
+                key=anahtar,
+                placeholder="Cümle numarası seç",
+            )
 
+b1, b2 = st.columns([1, 3])
+emin_degil = b1.checkbox("Emin değilim", value=onceki_kayit.get("emin") is False, key=f"emin-degil-{pid}")
+nedenler = b2.multiselect(
+    "Belirsizlik nedeni (emin değilsen zorunlu)",
+    list(kor.BELIRSIZLIK_NEDENLERI),
+    default=None if f"neden-{pid}" in st.session_state else onceki_kayit.get("belirsizlik", []),
+    format_func=kor.BELIRSIZLIK_NEDENLERI.get,
+    key=f"neden-{pid}",
+    placeholder="Eksik bağlam, çıkarım hatası…",
+)
 gerekce = st.text_input(
-    "Gerekçe (U için zorunlu; emin olmadığında ya da çıkarım hatasında yaz)",
+    "Gerekçe (U için zorunlu; serbest not)",
     value=onceki_gerekce,
     key=f"gerekce-{pid}",
 )
 etiket = "Kaydet: NONE (hiçbir madde)" if not secimler else f"Kaydet: {len(secimler)} madde"
 if st.button(etiket, type="primary", key=f"kaydet-{pid}"):
     try:
-        kor.kaydet(cikti, birim, secimler, ad, set(katalog), gerekce, orneklem_ozeti=ozet)
+        kor.kaydet(
+            cikti,
+            birim,
+            secimler,
+            ad,
+            set(katalog),
+            gerekce,
+            orneklem_ozeti=ozet,
+            beyan_turleri=beyan,
+            kanit=kanit,
+            belirsizlik=nedenler,
+            emin=not emin_degil,
+            sure_sn=int(time.monotonic() - st.session_state[f"_basla-{pid}"]),
+        )
+        st.session_state.pop(f"_basla-{pid}", None)
         st.rerun()
     except ValueError as exc:
         st.error(str(exc))

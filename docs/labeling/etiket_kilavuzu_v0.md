@@ -1,6 +1,6 @@
-# Etiketleme Kılavuzu v0 (Boşluk Analizi)
+# Etiketleme Kılavuzu v0.1 (Boşluk Analizi)
 
-Durum: **taslak, pilotta test edilecek.** Aşağıdaki kararlar bir başlangıç önerisidir; pilot sonrası v1'e dönüşür. Her değişiklik sürüm notuna yazılır.
+Durum: **taslak, pilotta test edilecek.** Dosya adı pilot boyunca `v0` kalır; içerik v0.1'dir (§9). Aşağıdaki kararlar bir başlangıç önerisidir; pilot sonrası v1'e dönüşür. Her değişiklik sürüm notuna yazılır.
 
 ## 1. Amaç
 
@@ -27,6 +27,46 @@ Etiketleyen, **bilginin raporda bulunup bulunmadığını** değerlendirir. Şir
 | U | Uygulanamaz | Koşullu bir madde için rapor, uygulanamaz olduğunu **gerekçesiyle** belirtir. |
 | NONE | İlgisiz | Paragraf bu maddeyle ilgili değildir (paragraf düzeyinde, çoğunlukla satır olarak yazılmaz; yalnızca hiçbir maddeyle ilişkisi yoksa tek satır). |
 
+Bu düzeyler etiketin **çekirdeğidir**: boşluk analizi ve κ yalnızca bunlarla ölçülür. Aşağıdaki üç alan (§3a–3c) her paragraf için ayrıca kaydedilir; çekirdeği değiştirmez, kararın neden ve nasıl verildiğini analiz edilebilir kılar (ADR-013). Kodlar `data/labels/etiket_semasi.json`'dadır; doğrulayıcı ve ekranlar o dosyayı okur.
+
+### 3a. Beyan türü (paragraf başına, en az bir tane)
+
+Paragrafın ne tür bir açıklama yaptığı. Bir paragraf birden çok türü taşıyabilir ("2024'te %12 azalttık, 2030 hedefimiz %40" → `gerceklesen` + `hedef`).
+
+| Kod | Ne zaman | Örnek |
+|---|---|---|
+| `politika` | Genel ilke, niyet, bağlılık; ölçülebilir hedef ya da sonuç yok | "Su kaynaklarının verimli kullanımını destekliyoruz." |
+| `hedef` | Gelecek için tarihli ya da ölçülebilir amaç | "2030'a kadar Kapsam 1 emisyonunu %40 azaltmayı hedefliyoruz." |
+| `gerceklesen` | Ölçülmüş performans ya da yapılmış iş | "2024'te Kapsam 1 emisyonumuz 12.450 tCO2e oldu." |
+| `yontem` | Nasıl yapıldığı: hesaplama yöntemi, sınır, varsayım, süreç | "Emisyonlar GHG Protokolü'ne göre operasyonel kontrol yaklaşımıyla hesaplanmıştır." |
+| `risk_firsat` | Risk ya da fırsatın tanımı, etkisi, senaryosu | "Kuraklık, üretim tesislerinde su temini riskini artırmaktadır." |
+| `yonetisim` | Kim sorumlu, nasıl gözetiliyor, ne sıklıkla raporlanıyor | "Sürdürülebilirlik Komitesi yılda iki kez kurula sunum yapar." |
+| `genel` | Şirket, rapor ya da bağlam tanıtımı; standart açısından içerik yok | "Şirketimiz 1985 yılında kurulmuştur." |
+
+Neden gerekli: RAG taslağında hedef ile gerçekleşen sonuç karışırsa sistem şirketin hedefini başarılmış gibi yazar (kip denetimi, R-VER-03). Ayrıca yalnızca `politika` taşıyan bir paragraf çoğunlukla en fazla **1** alır; bu ilişki pilotta ölçülür.
+
+### 3b. Kanıt cümlesi (2 ya da 1 verilen her madde için)
+
+Ekran paragrafı numaralı cümlelere böler (tabloda satırlara). Maddeyi karşılayan cümlenin numarasını seç; birden çok cümle gerekiyorsa hepsini seç. Kural: **yalnızca o cümleler okunsa da aynı düzeyi verirdin.** U için kanıt gerekmez; gerekçe yeterlidir.
+
+Neden gerekli: RAG'ın kaynak göstermesi ve modelin "hangi cümleye bakarak karar verdi" sorusu buna dayanır; anlaşmazlıklarda iki tarafın aynı cümleye mi baktığı görülür.
+
+### 3c. Emin değilim ve belirsizlik nedeni
+
+Kararından emin değilsen **Emin değilim**'i işaretle ve en az bir neden seç. Tahminini yine ver (çoğunlukla 1); belirsizlik ayrı kaydedilir, kararın yerine geçmez.
+
+| Kod | Ne zaman |
+|---|---|
+| `eksik_baglam` | Karar için önceki ya da sonraki paragraf gerekiyor |
+| `cikarim_hatasi` | Metin bozuk: kırık tablo, karışık sütun, eksik metin. **Madde seçme, NONE kaydet** (§5, durum 6) |
+| `birden_fazla_anlam` | İki yorum da savunulabilir |
+| `kilavuz_belirsiz` | Kılavuz bu durumu kapsamıyor (eski "kılavuz-belirsiz:" gerekçesinin yerini alır) |
+| `yetersiz_kanit` | Madde ile bağ zayıf; 1 ile NONE arasında kaldın |
+
+Ekran ayrıca paragraf başına süreyi kendiliğinden tutar (ilk görünüşten kayda kadar). Süre etiketleme maliyetini raporlamak içindir; hız için acele etme.
+
+Değer, birim, dönem ve hedef yılı **elle girilmez**: sayılar `report_service.verify.numbers` ile otomatik çıkarılır ve taslak doğrulamasında (S18) insan onayından geçer.
+
 Rapor düzeyi sonuç ayrıca tutulur: bir madde için hiçbir paragraf 1 veya 2 almadıysa madde **0 (Eksik)** olur. 0 kodu paragraf düzeyinde verilmez; 5. bölümdeki ikinci geçişle doğrulanır.
 
 ## 4. Karar adımları
@@ -38,7 +78,8 @@ Her paragraf için sırayla:
 3. Karşılanan unsurlar şirkete özgü ve somut mu, yoksa herhangi bir şirketin yazabileceği genel bir cümle mi?
 4. Sayısal ise: değer, birim ve dönem var mı?
 5. Tümü evet ise **2**, bir kısmı evet ise **1**.
-6. Emin değilsen **1** ver ve `gerekce` alanına kısaca nedenini yaz. Gerekçe, kılavuzun hangi noktasının belirsiz olduğunu gösterir.
+6. Emin değilsen **1** ver, **Emin değilim**'i işaretle ve nedenini seç (§3c). İstersen `gerekce` alanına serbest not ekle.
+7. 2 ya da 1 verdiğin her madde için kanıt cümlesini seç (§3b); paragrafın beyan türünü işaretle (§3a).
 
 ## 5. Sınır durumlar (pilotta karara bağlanacak)
 
@@ -49,7 +90,7 @@ Her paragraf için sırayla:
 | 3 | Çapraz atıf ("Ayrıntılar için bkz. sayfa 40") | Atıf yapılan içerik etiketlenir. Atıf paragrafı o madde için NONE sayılır. |
 | 4 | Aynı bilgi raporun birden çok yerinde | Hepsi etiketlenir. Madde durumu en yüksek düzeydir. |
 | 5 | Dönem belirtilmemiş sayı | 1. |
-| 6 | Kaynak PDF'ten bozuk çıkmış paragraf (kırık tablo, karışık sütun) | Etiketleme; `gerekce` alanına "çıkarım hatası" yazıp ayrı listele. Bunlar PDF işleme hata analizine gider. |
+| 6 | Kaynak PDF'ten bozuk çıkmış paragraf (kırık tablo, karışık sütun) | Madde seçme; belirsizlik nedeni `cikarim_hatasi`, NONE kaydet. Bunlar PDF işleme hata analizine gider. |
 | 7 | Tarihsel olay anlatan ama standardın istediği içeriği taşımayan paragraf | NONE. |
 
 Pilotta en çok ayrışan durumlar bu tabloya eklenir.
@@ -87,3 +128,4 @@ Pilotta en çok ayrışan durumlar bu tabloya eklenir.
 ## 9. Sürüm notları
 
 - v0 (2026-10-22): ilk taslak.
+- v0.1 (2026-10-23, pilot başlamadan): §3a beyan türü, §3b kanıt cümlesi, §3c emin değilim ve belirsizlik nedeni eklendi; çekirdek (§3) değişmedi. Karar: ADR-013. Şema sürümü `etiket-0.1`.

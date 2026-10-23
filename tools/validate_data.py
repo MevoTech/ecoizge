@@ -12,6 +12,7 @@ Dosya türü başlık satırından anlaşılır. Hata varsa her hatayı yazar ve
 from __future__ import annotations
 
 import csv
+import json
 import re
 import sys
 from datetime import date
@@ -23,6 +24,10 @@ CATALOG_HEADER = [
     "madde_id", "standart", "bolum", "madde_ref", "baslik", "gereklilik_ozeti",
     "zorunluluk", "veri_turu", "profil", "not", "dogrulama",
 ]  # fmt: skip
+PARAGRAPH_FIELDS = {
+    "paragraf_id", "rapor_id", "beyan_turleri", "kanit", "belirsizlik", "emin", "sure_sn",
+    "cumle_sayisi", "etiketleyen", "tarih", "sema_surumu",
+}  # fmt: skip
 LABEL_HEADER = [
     "etiket_id", "tur", "rapor_id", "sirket", "yil", "paragraf_id", "sayfa", "bolum_basligi",
     "metin", "madde_id", "karsilama", "guven", "gerekce", "etiketleyen", "kaynak", "tarih",
@@ -149,7 +154,73 @@ def validate_labels(
     return errs
 
 
+SEMA_PATH = ROOT / "data" / "labels" / "etiket_semasi.json"
+
+
+def validate_paragraph_records(path: Path, catalog_ids: set[str] | None = None) -> list[str]:
+    """Kör etiketlemenin paragraf kayıtları (`*.paragraf.jsonl`, ADR-013).
+
+    Sözlük `data/labels/etiket_semasi.json`'dan okunur (kılavuz §3a–3c ile aynı). Yanındaki çekirdek
+    CSV varsa çapraz denetlenir: her kayıt bir etiketlenmiş paragrafa, her kanıt 2/1 verilmiş bir
+    maddeye bağlı olmalı ve 2/1 verilmiş her maddenin kanıtı bulunmalı.
+    """
+    sema = json.loads(SEMA_PATH.read_text(encoding="utf-8"))
+    errs: list[str] = []
+    core = path.with_name(path.name.replace(".paragraf.jsonl", ".csv"))
+    levels: dict[str, dict[str, str]] = {}
+    if core.exists():
+        _, rows = read_csv(core)
+        for r in rows:
+            levels.setdefault(r["paragraf_id"], {})
+            if r["madde_id"] != "NONE":
+                levels[r["paragraf_id"]][r["madde_id"]] = r["karsilama"]
+    seen: set[str] = set()
+    with path.open(encoding="utf-8-sig") as fh:
+        lines = [ln for ln in fh if ln.strip()]
+    for i, line in enumerate(lines, start=1):
+        where = f"{path}:{i}"
+        try:
+            rec = json.loads(line)
+        except json.JSONDecodeError as exc:
+            errs.append(f"{where}: geçersiz JSON ({exc.msg})")
+            continue
+        missing = PARAGRAPH_FIELDS - rec.keys()
+        if missing:
+            errs.append(f"{where}: eksik alan {sorted(missing)}")
+            continue
+        pid = rec["paragraf_id"]
+        if pid in seen:
+            errs.append(f"{where}: yinelenen paragraf_id {pid}")
+        seen.add(pid)
+        if rec["sema_surumu"] != sema["sema_surumu"]:
+            errs.append(f"{where}: şema sürümü {rec['sema_surumu']} ≠ {sema['sema_surumu']}")
+        if not rec["beyan_turleri"] or set(rec["beyan_turleri"]) - sema["beyan_turleri"].keys():
+            errs.append(f"{where}: beyan_turleri boş ya da tanımsız {rec['beyan_turleri']}")
+        if set(rec["belirsizlik"]) - sema["belirsizlik_nedenleri"].keys():
+            errs.append(f"{where}: tanımsız belirsizlik nedeni {rec['belirsizlik']}")
+        if rec["emin"] is False and not rec["belirsizlik"]:
+            errs.append(f"{where}: emin değil ama belirsizlik nedeni yok")
+        n = rec["cumle_sayisi"]
+        for madde, idx in rec["kanit"].items():
+            if not idx or any(not isinstance(j, int) or not 1 <= j <= n for j in idx):
+                errs.append(f"{where}: {madde} kanıt numaraları 1–{n} dışında ya da boş")
+        if core.exists():
+            if pid not in levels:
+                errs.append(f"{where}: {pid} çekirdek CSV'de yok")
+                continue
+            graded = {m for m, s in levels[pid].items() if s in ("2", "1")}
+            if set(rec["kanit"]) - graded:
+                errs.append(
+                    f"{where}: kanıt 2/1 verilmemiş maddeye bağlı {sorted(set(rec['kanit']) - graded)}"
+                )
+            if graded - set(rec["kanit"]):
+                errs.append(f"{where}: kanıtı olmayan 2/1 madde {sorted(graded - set(rec['kanit']))}")
+    return errs
+
+
 def validate_file(path: Path, catalog_ids: set[str] | None = None) -> list[str]:
+    if path.name.endswith(".paragraf.jsonl"):
+        return validate_paragraph_records(path, catalog_ids)
     header, rows = read_csv(path)
     if header in (CATALOG_HEADER, CATALOG_HEADER_V1):
         return validate_catalog(path, header, rows)
@@ -166,6 +237,7 @@ def validate_file(path: Path, catalog_ids: set[str] | None = None) -> list[str]:
 def default_files(root: Path = ROOT) -> list[Path]:
     files = sorted((root / "data" / "catalog").glob("*.csv"))
     files += sorted((root / "data" / "labels").rglob("*.csv"))
+    files += sorted((root / "data" / "labels").rglob("*.paragraf.jsonl"))
     files += sorted((root / "data" / "raw" / "public").glob("KAYNAKLAR.csv"))
     return files
 

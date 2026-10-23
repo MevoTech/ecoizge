@@ -12,7 +12,7 @@ Durum [../PROGRESS.md](../PROGRESS.md) §2.1'de izlenir.
 | 1. Kurulum | yapıldı (2026-10-23) | Depo ve Python ortamı |
 | 2. Arayüzü açma | 2 dk | Tarayıcıda "EcoIzge · Çalışma ekranları" |
 | 3. Çıkarım kontrolü | 20 sayfa × 2–3 dk ≈ 1 saat | `reports/experiments/extraction-qa-elle.csv` |
-| 4. Kör etiketleme | 50 paragraf × 2–4 dk ≈ 2–3 saat | `data/labels/blind/mehmet-gunes/pilot_v0.csv` |
+| 4. Kör etiketleme | 50 paragraf × 3–5 dk ≈ 3–4 saat | `data/labels/blind/mehmet-gunes/pilot_v0.csv` + `pilot_v0.paragraf.jsonl` |
 
 İşleri istediğin kadar parçaya bölebilirsin. Her kayıt anında diske yazılır; arayüzü kapatıp açınca kaldığın yerden devam edersin.
 
@@ -92,33 +92,52 @@ Amaç: 50 paragrafın her birinin hangi TSRS/VSME maddesini ne ölçüde karşı
 - **Etiketleme bitene kadar "3 · Etiket onayı" ekranına girme.** Ekran pilot önerilerini zaten gizler; yine de girme.
 - Etiket dosyasını başka programda açma ve elle düzenleme. Excel'de açık kalırsa kayıt reddedilir ve uyarı çıkar (KL-11).
 
-**Adımlar:**
-1. Sol menüden **2 · Kör etiketleme**. İlk açılışta "Karşılama düzeyleri" kutusu açık gelir; bir kez oku.
-2. Ekranda bir paragraf görürsün. Üstte rapor, sayfa, bölüm ve tür yazar.
-3. **"Bu paragraf hangi maddeleri karşılıyor?"** listesinden maddeleri seç.
-   - Listeyi daraltmak için **Standart**, **Bölüm** ya da **Ara** kutusunu kullan (ör. "gözetim", "kapsam 1", "iklim").
-   - Filtre yalnızca listeyi daraltır; seçtiğin maddeler filtre değişince kaybolmaz.
+**Adımlar** (her paragraf için aynı sıra; kılavuz §3–3c):
+1. Sol menüden **2 · Kör etiketleme**. İlk açılışta "Nasıl karar veririm?" kutusu açık gelir; bir kez oku.
+2. Paragraf **numaralı cümleler** hâlinde görünür ([1], [2] …; tabloda her satır bir numara). Üstte rapor, sayfa, bölüm ve tür yazar.
+3. **Beyan türü:** paragraf ne söylüyor? Politika, hedef, gerçekleşen sonuç, yöntem, risk/fırsat, yönetişim ya da genel bilgi. Birden çok seçebilirsin; en az biri zorunlu.
+   - Örnek: "2024'te %12 azalttık, 2030 hedefimiz %40" → gerçekleşen sonuç + hedef.
+4. **Maddeler:** "Bu paragraf hangi maddeleri karşılıyor?" listesinden seç.
+   - Listeyi **Standart**, **Bölüm** ya da **Ara** kutusuyla daraltabilirsin (ör. "gözetim", "kapsam 1", "iklim"). Filtre seçimini silmez.
    - Bir paragraf birden çok maddeyi karşılayabilir; hepsini seç.
-4. Seçtiğin her madde için karşılama düzeyini işaretle (varsayılan seçili değildir, her birini sen seçmelisin):
-   - **2 · Tam:** maddenin istediği unsurların tamamı var, şirkete özgü ve somut. Sayısal maddede değer + birim + dönem.
-   - **1 · Kısmi / yüzeysel:** konuya değiniyor ama unsur eksik ya da ifade genel ("düzenli olarak bilgilendirilir"). Emin değilsen 1 ver ve gerekçe yaz.
-   - **U · Uygulanamaz:** rapor, maddenin şirkete uygulanmadığını gerekçesiyle söylüyor. U için gerekçe zorunlu.
-5. Hiçbir maddeyle ilgisi yoksa hiçbir şey seçme. Düğme **"Kaydet: NONE"** olur; bu da bir karardır.
-6. Çıkarım bozuksa (kırık tablo, anlamsız metin) etiketleme. Gerekçeye `çıkarım hatası` yaz ve NONE kaydet.
-7. **Kaydet**. Ekran kendiliğinden sıradaki etiketlenmemiş paragrafa geçer. Sol menüdeki çubuk ilerlemeyi gösterir.
+5. **Düzey:** her madde için seç. Varsayılan seçili değildir.
+   - **2 · Tam:** istenen unsurların tamamı var, şirkete özgü ve somut. Sayısal maddede değer + birim + dönem.
+   - **1 · Kısmi:** konuya değiniyor ama unsur eksik ya da ifade genel ("düzenli olarak bilgilendirilir").
+   - **U · Uygulanamaz:** rapor, maddenin uygulanmadığını gerekçesiyle söylüyor. U için gerekçe zorunlu.
+6. **Kanıt cümlesi:** 2 ya da 1 verdiğin her madde için o maddeyi karşılayan cümle numaralarını seç. Kural: yalnızca o cümleleri okusan da aynı düzeyi verirdin.
+7. **Emin değilim:** kararından emin değilsen işaretle ve nedenini seç:
+   - eksik bağlam;
+   - çıkarım hatası;
+   - birden fazla anlam;
+   - kılavuz belirsiz;
+   - yetersiz kanıt.
+
+   Tahminini yine ver (çoğunlukla 1).
+8. Hiçbir maddeyle ilgisi yoksa madde seçme; düğme **"Kaydet: NONE"** olur, bu da bir karardır. Beyan türü yine seçilir (çoğunlukla "genel bilgi").
+9. Çıkarım bozuksa (kırık tablo, anlamsız metin) madde seçme. Nedenlerden **Çıkarım hatası**'nı seç ve NONE kaydet.
+10. **Kaydet**. Eksik bir alan varsa ekran kırmızı kutuyla söyler. Kayıttan sonra sıradaki paragrafa geçilir. Ekran paragraf başına süreyi kendisi tutar; acele etme.
 
 Geri dönüp düzeltmek için sol menüdeki **Paragraf sırası** kutusuna numarayı yaz. Önceki seçimlerin gelir; değiştirip yeniden kaydedersin.
 
-**Kılavuz:** ayrıntılı kurallar ve örnekler [../labeling/etiket_kilavuzu_v0.md](../labeling/etiket_kilavuzu_v0.md)'dedir. En sık karışanlar:
-- "Şirketimiz iklim konularında yönetim kurulunu düzenli olarak bilgilendirmektedir" en fazla **1**'dir: yöntem ve sıklık yok.
+**Kılavuz:** ayrıntılı kurallar ve örnekler [../labeling/etiket_kilavuzu_v0.md](../labeling/etiket_kilavuzu_v0.md)'dedir (v0.1). En sık karışanlar:
+- "Şirketimiz iklim konularında yönetim kurulunu düzenli olarak bilgilendirmektedir" en fazla **1**'dir: yöntem ve sıklık yok. Beyan türü: yönetişim.
 - Dönemsiz sayı en fazla **1**'dir. Yıl bölüm başlığında geçiyorsa (ör. "2024 Performans Göstergeleri") dönem var sayılır.
 - "Ayrıntılar için bkz. s. 40" gibi atıf paragrafı **NONE**'dur.
-- Kılavuzun çözemediği durumda en iyi tahminini ver ve gerekçeye `kılavuz-belirsiz:` diye başlayarak yaz. Bu satırlar kılavuz v1'in girdisidir.
+- Kılavuzun çözemediği durumda en iyi tahminini ver, **Emin değilim** + **Kılavuz belirsiz** seç. Bu kayıtlar kılavuz v1'in girdisidir.
+
+**İlerlemeyi görmek:** **4 · Analiz** ekranı şunları gösterir:
+- çıkarım hata türleri;
+- düzey, beyan türü ve belirsizlik dağılımları;
+- rapor bazında sayılar;
+- medyan süre.
+
+Paragraf tablosunu CSV olarak indirebilirsin. Pilot sürerken ekran yalnızca senin kayıtlarını gösterir; uyum (κ) pilot bitince açılır.
 
 ## 5. Bitince
 
 Sol menüde "Pilot bitti" yazısı çıkınca bana **"bitti"** yaz. İki dosyanı bilgisayarındaki depodan okurum, ayrıca bir şey göndermen gerekmez:
 - `C:\Users\mevog\Documents\ecoizge\data\labels\blind\mehmet-gunes\pilot_v0.csv`
+- `C:\Users\mevog\Documents\ecoizge\data\labels\blind\mehmet-gunes\pilot_v0.paragraf.jsonl`
 - `C:\Users\mevog\Documents\ecoizge\reports\experiments\extraction-qa-elle.csv`
 
 İstersen depoya da gönder:

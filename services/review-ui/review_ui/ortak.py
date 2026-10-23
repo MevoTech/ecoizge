@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import csv
+import io
 import os
 import time
 from pathlib import Path
@@ -43,18 +44,25 @@ _BEKLEME = 0.2  # saniye; testte 0
 
 
 def atomik_csv_yaz(path: Path, alanlar: list[str], satirlar: list[dict[str, str]]) -> None:
-    """CSV'yi önce `.tmp`'ye yazar, sonra yerine koyar; yarım dosya kalmaz.
+    """CSV'yi atomik yazar (`atomik_metin_yaz`); yarım dosya kalmaz.
 
     Windows'ta dosya Excel'de açıksa (ya da OneDrive eşitliyorsa) `replace` PermissionError verir.
     Kısa aralıklarla yeniden denenir; olmazsa geçici dosya silinir ve anlaşılır bir hata verilir
     (ekranlar ValueError'ı kullanıcıya gösterir). KL-11.
     """
+    tampon = io.StringIO(newline="")
+    w = csv.DictWriter(tampon, fieldnames=alanlar)
+    w.writeheader()
+    w.writerows(satirlar)
+    atomik_metin_yaz(path, tampon.getvalue())
+
+
+def atomik_metin_yaz(path: Path, metin: str) -> None:
+    """Metni önce `.tmp`'ye yazar, sonra yerine koyar; kilitli dosyada anlaşılır hata verir."""
     path.parent.mkdir(parents=True, exist_ok=True)
-    gecici = path.with_suffix(".tmp")
+    gecici = path.with_name(path.name + ".tmp")
     with gecici.open("w", encoding="utf-8", newline="") as fh:
-        w = csv.DictWriter(fh, fieldnames=alanlar)
-        w.writeheader()
-        w.writerows(satirlar)
+        fh.write(metin)
     for deneme in range(_DENEME):
         try:
             gecici.replace(path)

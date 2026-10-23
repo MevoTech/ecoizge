@@ -78,6 +78,25 @@ Bağlam: B6 (insan–model κ ile insan–insan κ ayrımı), B12 (ClimateBERT/C
 Karar (öneri): 30–50 paragraflık bir alt kümeyi Zemzem ikinci insan olarak etiketler; iki κ ayrı raporlanır. İngilizce veri setleri yalnızca katkıları ayrı bir deneyle ölçülürse kullanılır, aksi hâlde kapsam dışı.
 Sonuçlar: S05, S16.
 
+## ADR-013 · Etiket şeması 0.1: çekirdek + paragraf alanları + analiz ekranı
+Tarih: 2026-10-23 · Durum: kabul · Karar sahibi: Mehmet Güneş (seçim 2026-10-23, üç seçenek arasından)
+Bağlam: Kullanıcı pilot başlamadan, etiketleme sisteminin yetersiz ve analiz edilemez olduğunu söyledi. Gerekçe olarak genel bir RAG/ESG etiketleme önerisi paylaştı. Mevcut şema paragraf × madde × düzeydi (2/1/U/NONE) ve tek bir serbest gerekçe alanı vardı. Bu yapıda belirsizlik sayılamıyordu. Hedef ile gerçekleşen sonuç ayrılmıyordu (R-VER-03). Kanıt kaynağı işaretlenmiyordu (R-GEN-03). Analiz ekranı da yoktu.
+Seçenekler:
+- (A) Çekirdek korunur; paragraf alanları eklenir (beyan türü, madde başına kanıt cümlesi, seçmeli belirsizlik nedeni, emin değilim, süre) ve bir analiz ekranı açılır. Tahmini pilot süresi ~3–4 saat.
+- (B) A'ya ek olarak değer, birim, dönem ve hedef yılı elle girilir. ~5–6 saat; elle hata riski yüksek; bu alanlar zaten `verify.numbers` ile otomatik çıkarılıyor.
+- (C) Şema aynı kalır, yalnızca analiz ekranı ve belirsizlik nedeni eklenir.
+Karar: A.
+- Çekirdek CSV başlığı (`etiket_sablonu.csv`) değişmedi; κ ve doğrulayıcı aynı kalır.
+- Yeni alanlar yanda `*.paragraf.jsonl` dosyasında tutulur.
+- Sözlük tek kaynaktan gelir: `data/labels/etiket_semasi.json`, sürüm `etiket-0.1`.
+Sonuçlar:
+- Kılavuz v0.1 (§3a–3c).
+- `services/review-ui`: kör etiketleme ekranında yeni alanlar, "4 · Analiz" ekranı.
+- `tools/validate_data.py` paragraf kayıtlarını ve çekirdekle tutarlılığı denetler.
+- Model önerisinin aynı alanları üretmesi S05.T8'dir.
+- Geri alma: yan dosya yok sayılırsa sistem şema 0'a döner; çekirdek etiketler etkilenmez.
+Kanıt: PROGRESS §4 (2026-10-23, ADR-013 kaydı).
+
 ---
 
 ## Açık kararlar (D-xx)

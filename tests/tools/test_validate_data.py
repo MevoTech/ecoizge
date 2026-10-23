@@ -119,3 +119,53 @@ def test_r_pdf_01_repo_manifesti_gecerli():
     m = ROOT / "data" / "raw" / "public" / "KAYNAKLAR.csv"
     assert m in default_files()
     assert validate_file(m) == []
+
+
+# ---------- paragraf kayıtları (ADR-013, şema 0.1) ----------
+def _paragraf_dosyalari(tmp_path, kayit_degisikligi=None, karsilama="2"):
+    import json
+
+    core = tmp_path / "pilot_v0.csv"
+    satir = dict.fromkeys(LABEL_HEADER, "") | {
+        "etiket_id": "p1:TSRS2-YON-06a", "tur": "paragraf", "rapor_id": "sirket-x-2025", "sirket": "x",
+        "yil": "2025", "paragraf_id": "p1", "sayfa": "3", "metin": "Komite toplanır.",
+        "madde_id": "TSRS2-YON-06a", "karsilama": karsilama, "etiketleyen": "M", "kaynak": "insan",
+        "tarih": "2026-10-23",
+    }  # fmt: skip
+    with core.open("w", encoding="utf-8", newline="") as fh:
+        w = csv.DictWriter(fh, fieldnames=LABEL_HEADER)
+        w.writeheader()
+        w.writerow(satir)
+    sema = json.loads((ROOT / "data/labels/etiket_semasi.json").read_text(encoding="utf-8"))
+    kayit = {
+        "paragraf_id": "p1", "rapor_id": "sirket-x-2025", "beyan_turleri": ["yonetisim"],
+        "kanit": {"TSRS2-YON-06a": [1]}, "kanit_metni": {"TSRS2-YON-06a": ["Komite toplanır."]},
+        "belirsizlik": [], "emin": True, "sure_sn": 12, "cumle_sayisi": 1, "etiketleyen": "M",
+        "tarih": "2026-10-23", "sema_surumu": sema["sema_surumu"],
+    }  # fmt: skip
+    kayit |= kayit_degisikligi or {}
+    yan = tmp_path / "pilot_v0.paragraf.jsonl"
+    yan.write_text(json.dumps(kayit, ensure_ascii=False) + "\n", encoding="utf-8")
+    return core, yan
+
+
+def test_r_etk_01_paragraf_kaydi_gecerli(tmp_path):
+    core, yan = _paragraf_dosyalari(tmp_path)
+    assert validate_file(core) == [] and validate_file(yan) == []
+
+
+def test_r_etk_01_paragraf_kaydi_hatalari(tmp_path):
+    _, yan = _paragraf_dosyalari(tmp_path, {"beyan_turleri": ["uydurma"], "emin": False, "sema_surumu": "x"})
+    errs = validate_file(yan)
+    assert any("beyan_turleri" in e for e in errs)
+    assert any("belirsizlik nedeni yok" in e for e in errs)
+    assert any("şema sürümü" in e for e in errs)
+
+
+def test_r_etk_01_paragraf_kaydi_kanit_cekirdekle_tutarli(tmp_path):
+    _, yan = _paragraf_dosyalari(tmp_path, {"kanit": {}})
+    assert any("kanıtı olmayan 2/1 madde" in e for e in validate_file(yan))
+    _, yan = _paragraf_dosyalari(tmp_path, {"kanit": {"TSRS2-YON-06a": [3]}})
+    assert any("1–1 dışında" in e for e in validate_file(yan))
+    _, yan = _paragraf_dosyalari(tmp_path, karsilama="U")
+    assert any("2/1 verilmemiş maddeye" in e for e in validate_file(yan))

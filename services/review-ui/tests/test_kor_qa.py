@@ -183,8 +183,10 @@ def test_r_etk_01_kor_ekran_etiketler_ve_oneriyi_gostermez(veri):
     assert "\\*kalın değil\\*" in tum_metin  # rapor metni Markdown olarak yorumlanmaz
 
     pid = _birim(1, sayfa=1)["paragraf_id"]
+    at.multiselect(key=f"beyan-{pid}").set_value(["yonetisim"]).run()
     at.multiselect(key=f"secili-{pid}").set_value(["TSRS2-YON-06a"]).run()
     at.radio(key=f"seviye-{pid}-TSRS2-YON-06a").set_value("2").run()
+    at.multiselect(key=f"kanit-{pid}-TSRS2-YON-06a").set_value([1]).run()
     at.button(key=f"kaydet-{pid}").click().run()
     assert not at.exception
 
@@ -194,6 +196,7 @@ def test_r_etk_01_kor_ekran_etiketler_ve_oneriyi_gostermez(veri):
     assert any("1 / 3" in str(p.text) for p in at.sidebar.get("progress"))
 
     pid2 = _birim(2, sayfa=1)["paragraf_id"]  # sıradaki paragrafa kendiliğinden geçti
+    at.multiselect(key=f"beyan-{pid2}").set_value(["genel"]).run()
     at.button(key=f"kaydet-{pid2}").click().run()  # hiçbir madde seçmeden: NONE
     rows = list(csv.DictReader(cikti.open(encoding="utf-8")))
     assert rows[-1]["paragraf_id"] == pid2 and rows[-1]["madde_id"] == "NONE"
@@ -295,8 +298,10 @@ def test_r_etk_01_filtre_degisince_kaydedilmemis_secim_korunur(veri):
     at.session_state["_ad"] = "Mehmet Güneş"
     at.run()
     pid = _birim(1, sayfa=1)["paragraf_id"]
+    at.multiselect(key=f"beyan-{pid}").set_value(["yonetisim"]).run()
     at.multiselect(key=f"secili-{pid}").set_value(["TSRS2-YON-06a"]).run()
     at.radio(key=f"seviye-{pid}-TSRS2-YON-06a").set_value("2").run()
+    at.multiselect(key=f"kanit-{pid}-TSRS2-YON-06a").set_value([1]).run()
     at.text_input(key="ara").input("emisyon").run()
     assert "TSRS2-YON-06a" in at.multiselect(key=f"secili-{pid}").value
     at.button(key=f"kaydet-{pid}").click().run()
@@ -327,6 +332,7 @@ def test_r_etk_01_orneklem_degisirse_ekran_durur(veri):
     at.session_state["_ad"] = "Mehmet Güneş"
     at.run()
     pid = _birim(1, sayfa=1)["paragraf_id"]
+    at.multiselect(key=f"beyan-{pid}").set_value(["genel"]).run()
     at.button(key=f"kaydet-{pid}").click().run()
     assert (data / "labels/blind/mehmet-gunes/pilot_v0.orneklem.sha256").exists()
 

@@ -118,12 +118,13 @@ Teknik gerekçe: S05 etiket üretmeden S12–S14, S19 ölçülemez. S08'deki kar
 - **Girdi:** `data/labels/pilot/orneklem.jsonl`; `data/catalog/catalog_v0.csv`; [labeling/etiket_kilavuzu_v0.md](labeling/etiket_kilavuzu_v0.md).
 - **Görevler:**
   - T1 ✅ Örneklem: 4 rapor, 30 aday + 20 rastgele, 100–1.500 karakter, yinelenen metin yok, girdi sırasından bağımsız (`sample_pilot.py`, seed 43; SHA-256 `c180ccc1…`).
-  - T2 ✅ Kör etiketleme ekranı ("2 · Kör etiketleme"). Ekran öneri dosyalarını okumaz; `annotation-assistant` `data/labels/blind/**` okuyamaz (guard).
+  - T2 ✅ Kör etiketleme ekranı ("2 · Kör etiketleme"). Ekran öneri dosyalarını okumaz; `annotation-assistant` `data/labels/blind/**` okuyamaz (guard). Şema 0.1 (ADR-013): beyan türü, kanıt cümlesi, belirsizlik nedeni, emin değilim, süre; kılavuz v0.1.
   - T3 ✋ U-04: Mehmet 50 paragrafı kör etiketler. Çıktı: `data/labels/blind/<ad>/pilot_v0.csv`.
   - T4 ⬜ `annotation-assistant` aynı 50 paragrafa, insan etiketini görmeden öneri üretir → `data/labels/proposals/pilot_v0.csv`.
   - T5 ⬜ κ (insan–model) ve anlaşmazlık listesi → `reports/experiments/kappa-pilot.md` (`evaluator`).
   - T6 ⬜ Kılavuz v1: ayrışan durumlar §5'e işlenir; ✋ Mehmet onaylar.
   - T7 ⬜ D-06 kabul edilirse Zemzem 30–50 paragraflık alt kümeyi etiketler (U-15); insan–insan κ ayrı raporlanır.
+  - T8 ⬜ Model önerisi de beyan türü ve kanıt cümlesi üretir (`to_proposals` şema 0.1); beyan türünde uyum ve kanıt örtüşmesi (Jaccard) analiz ekranına eklenir.
 - **Çıktılar:** Kör etiketler, öneriler, κ raporu, `docs/labeling/etiket_kilavuzu_v1.md`.
 - **Kabul:** İki etiket dosyası doğrulayıcıdan geçer. κ raporu insan–model ve (varsa) insan–insan için ayrı. Anlaşmazlıklar kılavuz §5'e işlenmiş.
 - **Doğrulama:** `python tools/validate_data.py data/labels/blind/<ad>/pilot_v0.csv`; `python tools/kappa.py <insan.csv> <model.csv>`.
@@ -155,6 +156,7 @@ Teknik gerekçe: S05 etiket üretmeden S12–S14, S19 ölçülemez. S08'deki kar
 - **Görevler:**
   - T1 ✅ Etiket onay kuyruğu: onayla, düzelt, reddet; günlük; doğrulayıcı uyumu; AppTest.
   - T2 ✅ Türkçe menü (`st.navigation`), Başlangıç, Çıkarım kontrolü ve Kör etiketleme ekranları; ekranlar AppTest ve tarayıcıda çalıştırıldı.
+  - T7 ✅ "4 · Analiz" ekranı (ADR-013): çıkarım hata türleri ve rapor bazında hatasız oran, düzey/beyan/belirsizlik dağılımları, süre, madde tablosu, CSV indirme; pilot bitince κ ve anlaşmazlık tablosu. Pilot sürerken yalnızca kendi kayıtların.
   - T3 ✅ Windows'ta kurulum ve açılış (`tools/windows/kurulum.bat`, `tools/windows/arayuz.bat`): kalite kapısı 6/6, ekranlar kullanıcının makinesinde açıldı, PDF sayfası çizildi (2026-10-23).
   - T4 ⬜ Koşu kuyruğu (`runs/*/run.json`) ve model kaydı durumu.
   - T5 ⬜ Toplu ön etiketleme: S05 sonrası kalan paragraflar için öneri → onay akışı.

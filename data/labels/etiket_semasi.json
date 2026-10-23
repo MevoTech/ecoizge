@@ -1,0 +1,20 @@
+{
+  "_aciklama": "Paragraf düzeyi etiket alanlarının TEK kaynağı (ADR-013). Kör etiketleme ekranı, doğrulayıcı (tools/validate_data.py) ve analiz ekranı bu dosyayı okur. Tanımlar ve örnekler: docs/labeling/etiket_kilavuzu_v0.md §3a–3c. Değişiklik yeni sema_surumu ile yapılır.",
+  "sema_surumu": "etiket-0.1",
+  "beyan_turleri": {
+    "politika": "Politika / taahhüt: genel ilke, niyet, bağlılık",
+    "hedef": "Hedef: gelecek için tarihli ya da ölçülebilir amaç",
+    "gerceklesen": "Gerçekleşen sonuç: ölçülmüş performans ya da yapılmış iş",
+    "yontem": "Yöntem / süreç: nasıl yapıldığı, hesaplama, sınır, varsayım",
+    "risk_firsat": "Risk ve fırsat: tanım, etki, senaryo",
+    "yonetisim": "Yönetişim yapısı: kim sorumlu, nasıl gözetiliyor",
+    "genel": "Genel bilgi: şirket, rapor ya da bağlam tanıtımı"
+  },
+  "belirsizlik_nedenleri": {
+    "eksik_baglam": "Eksik bağlam: önceki ya da sonraki paragraf gerekli",
+    "cikarim_hatasi": "Çıkarım hatası: kırık tablo, karışık ya da eksik metin",
+    "birden_fazla_anlam": "Birden fazla anlam: iki yorum da savunulabilir",
+    "kilavuz_belirsiz": "Kılavuz bu durumu kapsamıyor",
+    "yetersiz_kanit": "Yetersiz kanıt: madde ile bağ zayıf"
+  }
+}

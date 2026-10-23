@@ -56,6 +56,7 @@ Bu klasör raporlama modülünü bugünkü durumundan (F1, araştırma) tez tesl
   - Kısıt → KNOWN_LIMITATIONS
   - Gereksinim kimliği → REQUIREMENTS
   - Yazma alanı → `.claude/hooks/write_scopes.json`
+  - Paragraf etiket sözlüğü (beyan türü, belirsizlik nedeni) → `data/labels/etiket_semasi.json` (ADR-013)
 - **Kimlikler:**
 
   | Kimlik | Anlamı |

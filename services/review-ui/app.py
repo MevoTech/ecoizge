@@ -5,6 +5,7 @@ Ekranlar (sol menü), sırayla:
 1. Çıkarım kontrolü: PDF sayfası ile çıkarılan metni karşılaştır (S04).
 2. Kör etiketleme: pilot paragraflarını modelin etiketini görmeden etiketle (S05).
 3. Etiket onayı: model önerilerini onayla/düzelt (yalnızca pilot bittikten sonra).
+4. Analiz: çıkarım hataları, etiket dağılımları, belirsizlik, süre; pilot bitince κ (ADR-013).
 
 Ortam değişkenleri: ECOIZGE_DATA_DIR (veri), ECOIZGE_RAPOR_DIR (PDF'ler), ECOIZGE_REPORTS_DIR (QA çıktısı).
 """
@@ -22,5 +23,6 @@ st.navigation(
         st.Page(EKRAN / "cikarim_kontrolu.py", title="1 · Çıkarım kontrolü", url_path="cikarim"),
         st.Page(EKRAN / "kor_etiketleme.py", title="2 · Kör etiketleme", url_path="kor"),
         st.Page(EKRAN / "etiket_onayi.py", title="3 · Etiket onayı", url_path="onay"),
+        st.Page(EKRAN / "analiz.py", title="4 · Analiz", url_path="analiz"),
     ]
 ).run()
