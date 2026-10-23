@@ -30,7 +30,7 @@ for _yol in (_KOK / "tools", _KOK / "services" / "report-service", _KOK / "pipel
     if str(_yol) not in sys.path:
         sys.path.insert(0, str(_yol))
 
-from extract import BAND, join_lines  # noqa: E402
+from extract import BAND, BOSLUKLAR, YUMUSAK_TIRE, join_lines  # noqa: E402
 from tablo_kurallari import OLGU_SURUMU, TABLO_SURUMU, YIL, izgara  # noqa: E402
 
 from report_service.generation.placeholders import IDENTIFIER  # noqa: E402
@@ -338,10 +338,20 @@ def _en_yakin(cizgiler: list[float], v: float) -> int:
     return min(range(len(cizgiler)), key=lambda i: abs(cizgiler[i] - v))
 
 
+def hucre_metni_temizle(metin: str) -> str:
+    """Hücre metnini tek satıra indirir. Bölünemez boşluklar boşluk olur. Tek başına yumuşak tire (U+00AD)
+    tire işaretidir: Windows'ta Arial "-" karakterini böyle kodluyor (CI windows-latest, 2026-10-23). Sözcük
+    içindeki yumuşak tire silinir."""
+    metin = " ".join(metin.translate(BOSLUKLAR).split())
+    if metin == YUMUSAK_TIRE:
+        return "-"
+    return re.sub(rf"(?<=\S){YUMUSAK_TIRE}(?=\S)", "", metin).replace(f" {YUMUSAK_TIRE} ", " - ")
+
+
 def _hucre_metni(page, bbox) -> str:
     import pymupdf
 
-    return re.sub(r"\s+", " ", page.get_text("text", clip=pymupdf.Rect(bbox))).strip()
+    return hucre_metni_temizle(page.get_text("text", clip=pymupdf.Rect(bbox)))
 
 
 def _cizgi_izgarasi(page, table, sayfa: int) -> tuple[list[dict], int, int, int]:

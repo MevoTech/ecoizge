@@ -613,3 +613,18 @@ def test_r_tab_03_uc_sayfalik_zincir_tek_tabloya_birlesir():
     t = tb.sayfalari_birlestir([a, b, c], {1: 842.0, 2: 842.0, 3: 842.0})
     assert len(t) == 1 and t[0]["sayfalar"] == [1, 2, 3]
     assert _metin_izgarasi(t[0]) == [["Risk", "Etki"], ["R1", "Yüksek"], ["R2", "Orta"], ["R3", "Düşük"]]
+
+
+@pytest.mark.parametrize(
+    "ham,beklenen",
+    [
+        ("\xad", "-"),
+        (" \xad ", "-"),
+        ("sürdürüle\xadbilirlik", "sürdürülebilirlik"),
+        ("12\xa0450", "12 450"),
+        ("a\n b", "a b"),
+    ],
+)
+def test_r_tab_01_hucre_metni_windows_yazi_tipi_karakterleri(ham, beklenen):
+    """Regresyon (2026-10-23, CI windows-latest, Arial): '-' hücresi yumuşak tire (U+00AD) olarak okunuyordu."""
+    assert tb.hucre_metni_temizle(ham) == beklenen
