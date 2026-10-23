@@ -105,7 +105,7 @@ Amaç: 50 paragrafın her birinin hangi TSRS/VSME maddesini ne ölçüde karşı
    - **1 · Kısmi:** konuya değiniyor ama unsur eksik ya da ifade genel ("düzenli olarak bilgilendirilir").
    - **U · Uygulanamaz:** rapor, maddenin uygulanmadığını gerekçesiyle söylüyor. U için gerekçe zorunlu.
 6. **Kanıt cümlesi:** 2 ya da 1 verdiğin her madde için o maddeyi karşılayan cümle numaralarını seç. Kural: yalnızca o cümleleri okusan da aynı düzeyi verirdin.
-7. **Emin değilim:** kararından emin değilsen işaretle ve nedenini seç:
+7. **Emin değilim:** kararından emin değilsen işaretle ve nedenini seç (neden seçmek de "emin değilim" sayılır):
    - eksik bağlam;
    - çıkarım hatası;
    - birden fazla anlam;
@@ -114,8 +114,8 @@ Amaç: 50 paragrafın her birinin hangi TSRS/VSME maddesini ne ölçüde karşı
 
    Tahminini yine ver (çoğunlukla 1).
 8. Hiçbir maddeyle ilgisi yoksa madde seçme; düğme **"Kaydet: NONE"** olur, bu da bir karardır. Beyan türü yine seçilir (çoğunlukla "genel bilgi").
-9. Çıkarım bozuksa (kırık tablo, anlamsız metin) madde seçme. Nedenlerden **Çıkarım hatası**'nı seç ve NONE kaydet.
-10. **Kaydet**. Eksik bir alan varsa ekran kırmızı kutuyla söyler. Kayıttan sonra sıradaki paragrafa geçilir. Ekran paragraf başına süreyi kendisi tutar; acele etme.
+9. Çıkarım bozuksa (kırık tablo, anlamsız metin) madde seçme. Nedenlerden **Çıkarım hatası**'nı seç ve NONE kaydet; beyan türünü boş bırakabilirsin.
+10. **Kaydet**. Eksik bir alan varsa ekran kırmızı kutuyla söyler. Kayıttan sonra sıradaki paragrafa geçilir. Ekran paragraf başına süreyi kendisi tutar (yalnızca o paragraf ekrandayken); acele etme, ara verirken paragrafı açık bırakman da sorun değil.
 
 Geri dönüp düzeltmek için sol menüdeki **Paragraf sırası** kutusuna numarayı yaz. Önceki seçimlerin gelir; değiştirip yeniden kaydedersin.
 
@@ -131,7 +131,9 @@ Geri dönüp düzeltmek için sol menüdeki **Paragraf sırası** kutusuna numar
 - rapor bazında sayılar;
 - medyan süre.
 
-Paragraf tablosunu CSV olarak indirebilirsin. Pilot sürerken ekran yalnızca senin kayıtlarını gösterir; uyum (κ) pilot bitince açılır.
+Paragraf tablosunu CSV olarak indirebilirsin (Excel'de çift tıklayınca sütunlara ayrılır). Analiz ekranı, kutusuna yazılan adın kayıtlarını gösterir; ad diğer ekranlardan kendiliğinden gelmez. Arayüzde kimlik doğrulama yoktur: aynı bilgisayarı ikinci bir etiketleyici kullanacaksa önce bana haber ver (KL-12).
+
+**Uyum (κ) ve kilit:** pilot bitip model önerileri üretilince κ bu ekranda görünür. κ ya da model önerisi **bir kez gösterilince kör etiketlerin donar**; ekran değişikliğe izin vermez. Bu yüzden "bitti" demeden önce düzeltmek istediğin paragraf varsa düzelt.
 
 ## 5. Bitince
 

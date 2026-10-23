@@ -48,6 +48,13 @@ if uyari:
     st.stop()
 katalog = catalog_lookup(Paths(data))
 yapilan = kor.yapilanlar(cikti)
+if kor.korleme_acildi(data):
+    biten, toplam, _ = kor.ilerleme(orneklem, yapilan)
+    st.info(
+        f"Körleme açıldı: model önerileri ya da uyum (κ) gösterildi. Kör etiketler donduruldu "
+        f"({biten} / {toplam} paragraf). Düzeltmeler kılavuz v1 turunda yapılır; sonuçlar '4 · Analiz' ekranında."
+    )
+    st.stop()
 
 biten, toplam, sahipsiz = kor.ilerleme(orneklem, yapilan)
 st.sidebar.progress(biten / toplam, text=f"{biten} / {toplam} paragraf")
@@ -71,8 +78,9 @@ onceki = {r["madde_id"]: r["karsilama"] for r in yapilan.get(pid, []) if r["madd
 onceki_gerekce = next((r["gerekce"] for r in yapilan.get(pid, [])), "")
 onceki_kayit = kor.paragraf_kayitlari(cikti).get(pid, {})
 cumleler = kor.cumlelere_bol(birim["metin"], birim["tur"])
-# Süre: paragraf ilk kez ekrana geldiğinde başlar, kayıtta biter (yeniden düzeltmede yeniden başlar).
-st.session_state.setdefault(f"_basla-{pid}", time.monotonic())
+# Süre: yalnızca paragraf ekranda etkinken sayılır; başka paragrafa geçince durur (Ö6).
+sure_durumu = st.session_state.setdefault("_sure", {})
+kor.sure_guncelle(sure_durumu, pid, time.monotonic())
 
 with st.expander("Nasıl karar veririm? (kılavuz §3–4)", expanded=not yapilan):
     st.markdown(
@@ -94,7 +102,7 @@ with st.container(border=True):
     st.markdown("  \n".join(f"**[{i}]** {md_kacis(c)}" for i, c in enumerate(cumleler, start=1)))
 
 beyan = st.multiselect(
-    "Beyan türü (bu paragraf ne söylüyor? birden çok seçebilirsin)",
+    "Beyan türü (bu paragraf ne söylüyor? birden çok seçebilirsin; çıkarım hatasında boş bırakılabilir)",
     list(kor.BEYAN_TURLERI),
     default=None if f"beyan-{pid}" in st.session_state else onceki_kayit.get("beyan_turleri", []),
     format_func=kor.BEYAN_TURLERI.get,
@@ -145,7 +153,9 @@ for mid in secili:
             kanit[mid] = st.multiselect(
                 "Kanıt cümlesi (bu maddeyi hangi cümle karşılıyor?)",
                 list(range(1, len(cumleler) + 1)),
-                default=None if anahtar in st.session_state else onceki_kayit.get("kanit", {}).get(mid, []),
+                default=None
+                if anahtar in st.session_state
+                else kor.kanit_varsayilan(onceki_kayit, mid, cumleler),
                 format_func=lambda i: (
                     f"[{i}] {cumleler[i - 1][:70]}{'…' if len(cumleler[i - 1]) > 70 else ''}"
                 ),
@@ -156,7 +166,7 @@ for mid in secili:
 b1, b2 = st.columns([1, 3])
 emin_degil = b1.checkbox("Emin değilim", value=onceki_kayit.get("emin") is False, key=f"emin-degil-{pid}")
 nedenler = b2.multiselect(
-    "Belirsizlik nedeni (emin değilsen zorunlu)",
+    "Belirsizlik nedeni (emin değilsen zorunlu; neden seçmek 'emin değilim' demektir)",
     list(kor.BELIRSIZLIK_NEDENLERI),
     default=None if f"neden-{pid}" in st.session_state else onceki_kayit.get("belirsizlik", []),
     format_func=kor.BELIRSIZLIK_NEDENLERI.get,
@@ -182,10 +192,10 @@ if st.button(etiket, type="primary", key=f"kaydet-{pid}"):
             beyan_turleri=beyan,
             kanit=kanit,
             belirsizlik=nedenler,
-            emin=not emin_degil,
-            sure_sn=int(time.monotonic() - st.session_state[f"_basla-{pid}"]),
+            emin=not (emin_degil or nedenler),  # kılavuz §3c: neden seçildiyse emin değil
+            sure_sn=kor.sure_al(sure_durumu, pid, time.monotonic()),
         )
-        st.session_state.pop(f"_basla-{pid}", None)
+        kor.sure_sifirla(sure_durumu, pid, time.monotonic())
         st.rerun()
     except ValueError as exc:
         st.error(str(exc))

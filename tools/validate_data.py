@@ -24,10 +24,6 @@ CATALOG_HEADER = [
     "madde_id", "standart", "bolum", "madde_ref", "baslik", "gereklilik_ozeti",
     "zorunluluk", "veri_turu", "profil", "not", "dogrulama",
 ]  # fmt: skip
-PARAGRAPH_FIELDS = {
-    "paragraf_id", "rapor_id", "beyan_turleri", "kanit", "belirsizlik", "emin", "sure_sn",
-    "cumle_sayisi", "etiketleyen", "tarih", "sema_surumu",
-}  # fmt: skip
 LABEL_HEADER = [
     "etiket_id", "tur", "rapor_id", "sirket", "yil", "paragraf_id", "sayfa", "bolum_basligi",
     "metin", "madde_id", "karsilama", "guven", "gerekce", "etiketleyen", "kaynak", "tarih",
@@ -154,26 +150,31 @@ def validate_labels(
     return errs
 
 
-SEMA_PATH = ROOT / "data" / "labels" / "etiket_semasi.json"
-
-
 def validate_paragraph_records(path: Path, catalog_ids: set[str] | None = None) -> list[str]:
     """Kör etiketlemenin paragraf kayıtları (`*.paragraf.jsonl`, ADR-013).
 
-    Sözlük `data/labels/etiket_semasi.json`'dan okunur (kılavuz §3a–3c ile aynı). Yanındaki çekirdek
-    CSV varsa çapraz denetlenir: her kayıt bir etiketlenmiş paragrafa, her kanıt 2/1 verilmiş bir
-    maddeye bağlı olmalı ve 2/1 verilmiş her maddenin kanıtı bulunmalı.
+    Kurallar `tools/etiket_kurallari.py`'dan gelir; kör etiketleme ekranı da aynı fonksiyonu kullanır.
+    Ayrıca yanındaki çekirdek CSV ile çapraz denetim:
+    - CSV olmalı;
+    - CSV'deki her paragrafın kaydı olmalı ve tersi;
+    - rapor_id ve etiketleyen aynı olmalı;
+    - kanıt metni, CSV'deki metnin aynı kuralla bölünmüş hâliyle eşleşmeli.
     """
-    sema = json.loads(SEMA_PATH.read_text(encoding="utf-8"))
+    import etiket_kurallari as ek
+
+    sema = ek.sema_oku()
     errs: list[str] = []
     core = path.with_name(path.name.replace(".paragraf.jsonl", ".csv"))
+    if not core.exists():
+        return [f"{path}: çekirdek CSV yok ({core.name}); paragraf kaydı tek başına geçerli değil"]
+    _, rows = read_csv(core)
     levels: dict[str, dict[str, str]] = {}
-    if core.exists():
-        _, rows = read_csv(core)
-        for r in rows:
-            levels.setdefault(r["paragraf_id"], {})
-            if r["madde_id"] != "NONE":
-                levels[r["paragraf_id"]][r["madde_id"]] = r["karsilama"]
+    core_rows: dict[str, dict[str, str]] = {}
+    for r in rows:
+        levels.setdefault(r["paragraf_id"], {})
+        core_rows.setdefault(r["paragraf_id"], r)
+        if r["madde_id"] != "NONE":
+            levels[r["paragraf_id"]][r["madde_id"]] = r["karsilama"]
     seen: set[str] = set()
     with path.open(encoding="utf-8-sig") as fh:
         lines = [ln for ln in fh if ln.strip()]
@@ -184,7 +185,10 @@ def validate_paragraph_records(path: Path, catalog_ids: set[str] | None = None) 
         except json.JSONDecodeError as exc:
             errs.append(f"{where}: geçersiz JSON ({exc.msg})")
             continue
-        missing = PARAGRAPH_FIELDS - rec.keys()
+        if not isinstance(rec, dict):
+            errs.append(f"{where}: kayıt bir JSON nesnesi olmalı")
+            continue
+        missing = ek.ALANLAR - rec.keys()
         if missing:
             errs.append(f"{where}: eksik alan {sorted(missing)}")
             continue
@@ -194,27 +198,36 @@ def validate_paragraph_records(path: Path, catalog_ids: set[str] | None = None) 
         seen.add(pid)
         if rec["sema_surumu"] != sema["sema_surumu"]:
             errs.append(f"{where}: şema sürümü {rec['sema_surumu']} ≠ {sema['sema_surumu']}")
-        if not rec["beyan_turleri"] or set(rec["beyan_turleri"]) - sema["beyan_turleri"].keys():
-            errs.append(f"{where}: beyan_turleri boş ya da tanımsız {rec['beyan_turleri']}")
-        if set(rec["belirsizlik"]) - sema["belirsizlik_nedenleri"].keys():
-            errs.append(f"{where}: tanımsız belirsizlik nedeni {rec['belirsizlik']}")
-        if rec["emin"] is False and not rec["belirsizlik"]:
-            errs.append(f"{where}: emin değil ama belirsizlik nedeni yok")
-        n = rec["cumle_sayisi"]
-        for madde, idx in rec["kanit"].items():
-            if not idx or any(not isinstance(j, int) or not 1 <= j <= n for j in idx):
-                errs.append(f"{where}: {madde} kanıt numaraları 1–{n} dışında ya da boş")
-        if core.exists():
-            if pid not in levels:
-                errs.append(f"{where}: {pid} çekirdek CSV'de yok")
-                continue
-            graded = {m for m, s in levels[pid].items() if s in ("2", "1")}
-            if set(rec["kanit"]) - graded:
-                errs.append(
-                    f"{where}: kanıt 2/1 verilmemiş maddeye bağlı {sorted(set(rec['kanit']) - graded)}"
-                )
-            if graded - set(rec["kanit"]):
-                errs.append(f"{where}: kanıtı olmayan 2/1 madde {sorted(graded - set(rec['kanit']))}")
+        if not isinstance(rec["cumle_sayisi"], int) or isinstance(rec["cumle_sayisi"], bool):
+            errs.append(f"{where}: cumle_sayisi tam sayı olmalı")
+            continue
+        if pid not in levels:
+            errs.append(f"{where}: {pid} çekirdek CSV'de yok")
+            continue
+        errs += [
+            f"{where}: {h}"
+            for h in ek.kural_hatalari(
+                levels[pid], rec["beyan_turleri"], rec["kanit"], rec["belirsizlik"], rec["emin"],
+                rec["cumle_sayisi"], sema,
+            )
+        ]  # fmt: skip
+        satir = core_rows[pid]
+        for alan in ("rapor_id", "etiketleyen"):
+            if rec[alan] != satir[alan]:
+                errs.append(f"{where}: {alan} çekirdek CSV ile farklı ({rec[alan]!r} ≠ {satir[alan]!r})")
+        if isinstance(rec["kanit"], dict) and isinstance(rec["kanit_metni"], dict):
+            cumleler = ek.cumlelere_bol(satir["metin"], rec["birim_turu"])
+            for madde, idx in rec["kanit"].items():
+                metinler = rec["kanit_metni"].get(madde)
+                if not isinstance(metinler, list) or len(metinler) != len(idx):
+                    errs.append(f"{where}: {madde} kanıt metni ile numaraları uyuşmuyor")
+                elif rec["bolme_surumu"] == ek.BOLME_SURUMU and any(
+                    not isinstance(j, int) or not 1 <= j <= len(cumleler) or cumleler[j - 1] != m
+                    for j, m in zip(idx, metinler, strict=True)
+                ):
+                    errs.append(f"{where}: {madde} kanıt metni paragraftaki cümleyle eşleşmiyor")
+    for pid in sorted(levels.keys() - seen):
+        errs.append(f"{path}: {pid} için paragraf kaydı yok (çekirdek CSV'de var)")
     return errs
 
 

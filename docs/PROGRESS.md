@@ -102,6 +102,47 @@ Ayrıntılar [DECISIONS.md](DECISIONS.md)'de. Kabul edilenler: ADR-001…ADR-006
 
 En yeni kayıt en üstte. 2026-10-23 öncesi kayıtlar eski düzende tarih başlıklıydı; içerikleri olduğu gibi korunup aşama kimlikleriyle yeniden başlıklandırıldı.
 
+### S05, S07: Etiket şeması 0.1 (ADR-013), analiz ekranı ve bağımsız inceleme (2026-10-23)
+
+- **Kullanıcı isteği ve kararı.** Kullanıcı etiketleme sisteminin yetersiz ve analiz edilemez olduğunu söyledi. Sunulan üç seçenekten "çekirdek + 4 alan + analiz"i seçti (ADR-013). Etiketleme henüz başlamamıştı; bilgisayarında kör etiket dosyası yoktu.
+- **Görev S05.T2 (şema 0.1) ✅**
+  - Çekirdek (paragraf × madde × düzey) ve CSV başlığı değişmedi; κ ve doğrulayıcı uyumlu.
+  - Yan dosya `pilot_v0.paragraf.jsonl`: beyan türü, madde başına kanıt cümlesi (numara ve metin), belirsizlik nedeni, emin değilim, etkin süre, bölme sürümü, birim türü.
+  - Sözlük `data/labels/etiket_semasi.json`'da. Kurallar ve cümle bölme tek modülde (`tools/etiket_kurallari.py`); ekran ve doğrulayıcı aynı fonksiyonu kullanır.
+  - Kılavuz v0.1 §3a–3c.
+- **Görev S07.T7 (4 · Analiz) ✅**
+  - Çıkarım hata türleri ve rapor bazında hatasız oran.
+  - Düzey, beyan türü ve belirsizlik dağılımları; çıkarım hatası "ilgisiz"den ayrı sayılıyor.
+  - Etkin süre (n ve kesintili sayısıyla), rapor ve madde tabloları.
+  - `;` ayraçlı CSV indirme.
+  - Pilot bitince κ ve anlaşmazlık tablosu. Yüzde ve sayılar `format_tr` ile.
+- **İnceleme (AK-G4).** `code-reviewer` 1 kritik, 8 önemli, 10 küçük bulgu verdi. Rapor ve durum: [audits/S05-S07-inceleme-2026-10-23-sema.md](audits/S05-S07-inceleme-2026-10-23-sema.md).
+  - Her bulgu için önce kırmızı test yazıldı: 17 yeni ekran ve mantık testi, 2 doğrulayıcı testi.
+  - Ö2 açık kaldı (KL-12, D-06'ya bağlı).
+  - Kritik bulgu K1: körleme açıldıktan sonra kör etiket değiştirilebiliyordu. Artık model önerisi ya da κ bir kez gösterilince kilit dosyası yazılıyor (zaman, neden, SHA-256) ve kör etiketler donuyor.
+- **Kasıtlı bozma (`python -B`):** dört kural tek tek devre dışı bırakıldı; her seferinde ilgili test kırmızıya döndü (4/4).
+  - "neden varken emin" → 1 test.
+  - "çıkarım hatasında madde" → 2 test.
+  - "beyan türü zorunlu" → 2 test.
+  - Körleme kilidi → 1 test.
+- **Çalıştır.** Arayüz gerçek pilot verisinin bir kopyasıyla başsız açıldı ve Playwright ile görüntülendi:
+  - kör etiketleme ekranında numaralı cümleler ve yeni alanlar;
+  - analiz ekranında örnek kayıtlarla çubuk grafikler ve tablolar.
+- **Örneklemde cümle sayısı** (bölme sürümü 2): 23 birim tek cümle, 12 birim 2, 9 birim 3, 5 birim 4, 1 birim 6.
+
+| Komut | Sonuç |
+|---|---|
+| `python tools/check_all.py` | 6/6 GEÇTİ |
+| `python -m pytest -q` | 290 geçti |
+
+- **Öz-denetim:**
+  - Körleme kod düzeyinde korunuyor: onay ekranı ve analiz kilitliyken öneri göstermiyor; gösterince kör etiketler donuyor.
+  - İki etiketleyici aynı bilgisayardaysa kimlik doğrulama yok (KL-12).
+  - Windows: iki dosyanın birlikte yazımı, artan bekleme ve `fsync` testli; gerçek Excel kilidi denenmedi (KL-08).
+- **Ertelenen:**
+  - Model önerisinin aynı alanları üretmesi → S05.T8.
+  - Beklenen etiketleyiciler dosyası → S05.T7 (D-06).
+
 ### S04, S07: Windows kurulumu kullanıcının makinesinde, Windows'ta bulunan çıkarım hatası, D-08 (2026-10-23)
 
 - **Kullanıcının izni:** "ne gerekiyorsa kur, full kontrol sende" (2026-10-23).
@@ -385,5 +426,8 @@ Ajanın kullanıcıya sormadan verdiği kararlar. Kullanıcı bu tabloyu okuyara
 | 2026-10-23 | S05.T1 | Pilot raporları: Derimod, Akbank, Klimasan, QUA Granite 2025 | Farklı sektör ve ölçek; `tr`; TSRS dönemi | Plan S05 |
 | 2026-10-23 | S05.T1 | Aday seçimi Ochiai benzerliği, 100–1.500 karakter, yinelenen metin dışarıda | Uzunluk yanlılığı ve kısa başlık yığılması ölçüldü (KL-05) | `.claude/skills/label-propose/SKILL.md` |
 | 2026-10-23 | S05.T2 | `annotation-assistant` `data/labels/blind/**` okuyamaz | Kör pilotun korunması | `.claude/hooks/write_scopes.json` |
+| 2026-10-23 | S05.T2 | Körleme kilidi: model önerisi ya da κ bir kez gösterilince kör etiketler donar; düzeltme kılavuz v1 turunda (`pilot_v1`). İncelemenin ikinci seçeneği (gerekçeli ayrı düzeltme dosyası) seçilmedi | Kör κ'nın garanti edilmesi; kılavuz §7 zaten yeni tur öngörüyor | ADR-013 |
+| 2026-10-23 | S05.T2 | Cümle bölme: sayıdan sonraki nokta bölmez, yalnızca 4 haneli yıl bölünür; kanıt metniyle saklanır ve metinden yeniden eşlenir | "11. Kalkınma Planı", "Tablo 1." gibi yanlış bölmeler daha zararlı | ADR-013 |
+| 2026-10-23 | S07.T7 | 10 dakikayı aşan paragraf süresi "kesintili" sayılır, toplam ve medyana girmez | Ara verme etiketleme maliyetini şişirmesin | ADR-013 |
 | 2026-10-23 | S01.T5 | `noor` belge yapısı uyarlandı; `tasks/` kaldırıldı, plan tek dosyada | Kullanıcı isteği; tek kaynak ilkesi | C-04 |
 | 2026-10-23 | S01.T5 | Geliştirme 2'deki web arayüzü için S25–S27 eklendi | Plan ile kaynak belge çelişkisi | C-01 |

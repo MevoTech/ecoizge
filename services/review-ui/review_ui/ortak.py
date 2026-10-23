@@ -39,41 +39,76 @@ def tr_kucuk(metin: str) -> str:
     return metin.replace("I", "ı").replace("İ", "i").lower()
 
 
-_DENEME = 3
-_BEKLEME = 0.2  # saniye; testte 0
+_DENEME = 5
+_BEKLEME = 0.2  # saniye, her denemede artar; testte 0
 
 
-def atomik_csv_yaz(path: Path, alanlar: list[str], satirlar: list[dict[str, str]]) -> None:
-    """CSV'yi atomik yazar (`atomik_metin_yaz`); yarım dosya kalmaz.
-
-    Windows'ta dosya Excel'de açıksa (ya da OneDrive eşitliyorsa) `replace` PermissionError verir.
-    Kısa aralıklarla yeniden denenir; olmazsa geçici dosya silinir ve anlaşılır bir hata verilir
-    (ekranlar ValueError'ı kullanıcıya gösterir). KL-11.
-    """
+def csv_metni(alanlar: list[str], satirlar: list[dict[str, str]]) -> str:
     tampon = io.StringIO(newline="")
     w = csv.DictWriter(tampon, fieldnames=alanlar)
     w.writeheader()
     w.writerows(satirlar)
-    atomik_metin_yaz(path, tampon.getvalue())
+    return tampon.getvalue()
+
+
+def atomik_csv_yaz(path: Path, alanlar: list[str], satirlar: list[dict[str, str]]) -> None:
+    """CSV'yi atomik yazar (`atomik_coklu_yaz`); yarım dosya kalmaz.
+
+    Windows'ta dosya Excel'de açıksa (ya da Defender/dizinleyici tutuyorsa) `replace` PermissionError
+    verir. Artan aralıklarla yeniden denenir; olmazsa geçici dosya silinir ve anlaşılır bir hata
+    verilir (ekranlar ValueError'ı kullanıcıya gösterir). KL-11.
+    """
+    atomik_coklu_yaz([(path, csv_metni(alanlar, satirlar))])
 
 
 def atomik_metin_yaz(path: Path, metin: str) -> None:
-    """Metni önce `.tmp`'ye yazar, sonra yerine koyar; kilitli dosyada anlaşılır hata verir."""
-    path.parent.mkdir(parents=True, exist_ok=True)
-    gecici = path.with_name(path.name + ".tmp")
-    with gecici.open("w", encoding="utf-8", newline="") as fh:
-        fh.write(metin)
+    atomik_coklu_yaz([(path, metin)])
+
+
+def _yerine_koy(gecici: Path, hedef: Path) -> bool:
     for deneme in range(_DENEME):
         try:
-            gecici.replace(path)
-            return
+            gecici.replace(hedef)
+            return True
         except PermissionError:
             if deneme + 1 < _DENEME:
-                time.sleep(_BEKLEME)
-    gecici.unlink(missing_ok=True)
-    raise KayitHatasi(
-        f"{path.name} başka bir programda açık (Excel?). Dosyayı kapatıp yeniden kaydet; kaydın kaybolmadı."
-    )
+                time.sleep(_BEKLEME * (deneme + 1))
+    return False
+
+
+def atomik_coklu_yaz(dosyalar: list[tuple[Path, str]]) -> None:
+    """Birden çok dosyayı birlikte yazar: ya hepsi yeni içerikte kalır ya hepsi eski içerikte.
+
+    Önce bütün `.tmp` dosyaları yazılıp diske zorlanır (fsync), sonra sırayla yerine konur. Biri
+    yerine konamazsa önceden konanlar eski içeriğe döndürülür (Ö1: çekirdek CSV ile paragraf kaydı
+    ayrışmasın).
+    """
+    hazir: list[tuple[Path, Path, bytes | None]] = []
+    try:
+        for hedef, metin in dosyalar:
+            hedef.parent.mkdir(parents=True, exist_ok=True)
+            gecici = hedef.with_name(hedef.name + ".tmp")
+            with gecici.open("w", encoding="utf-8", newline="") as fh:
+                fh.write(metin)
+                fh.flush()
+                os.fsync(fh.fileno())
+            hazir.append((hedef, gecici, hedef.read_bytes() if hedef.exists() else None))
+        konan: list[tuple[Path, bytes | None]] = []
+        for hedef, gecici, eski in hazir:
+            if not _yerine_koy(gecici, hedef):
+                for geri, icerik in reversed(konan):
+                    if icerik is None:
+                        geri.unlink(missing_ok=True)
+                    else:
+                        geri.write_bytes(icerik)
+                raise KayitHatasi(
+                    f"{hedef.name} başka bir programda açık (Excel?). Dosyayı kapatıp yeniden kaydet; "
+                    "bu kayıt yazılmadı, önceki kayıtların duruyor."
+                )
+            konan.append((hedef, eski))
+    finally:
+        for _, gecici, _ in hazir:
+            gecici.unlink(missing_ok=True)
 
 
 class KayitHatasi(ValueError):

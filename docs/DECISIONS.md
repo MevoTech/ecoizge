@@ -95,6 +95,11 @@ Sonuçlar:
 - `tools/validate_data.py` paragraf kayıtlarını ve çekirdekle tutarlılığı denetler.
 - Model önerisinin aynı alanları üretmesi S05.T8'dir.
 - Geri alma: yan dosya yok sayılırsa sistem şema 0'a döner; çekirdek etiketler etkilenmez.
+- Bağımsız inceleme (2026-10-23, [audits/S05-S07-inceleme-2026-10-23-sema.md](audits/S05-S07-inceleme-2026-10-23-sema.md)) sonrası eklenenler:
+  - Kurallar ve cümle bölme tek modülde: `tools/etiket_kurallari.py`.
+  - İki dosya birlikte yazılır, ya hepsi ya hiçbiri.
+  - Körleme kilidi: model önerisi ya da κ gösterilince kör etiketler donar.
+  - Süre etkin süredir.
 Kanıt: PROGRESS §4 (2026-10-23, ADR-013 kaydı).
 
 ---

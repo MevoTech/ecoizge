@@ -53,17 +53,19 @@ Neden gerekli: RAG'ın kaynak göstermesi ve modelin "hangi cümleye bakarak kar
 
 ### 3c. Emin değilim ve belirsizlik nedeni
 
-Kararından emin değilsen **Emin değilim**'i işaretle ve en az bir neden seç. Tahminini yine ver (çoğunlukla 1); belirsizlik ayrı kaydedilir, kararın yerine geçmez.
+Kararından emin değilsen **Emin değilim**'i işaretle ve en az bir neden seç. Neden seçmek "emin değilim" demektir; ikisi birlikte kaydedilir. Tahminini yine ver (çoğunlukla 1); belirsizlik ayrı kaydedilir, kararın yerine geçmez.
 
 | Kod | Ne zaman |
 |---|---|
 | `eksik_baglam` | Karar için önceki ya da sonraki paragraf gerekiyor |
-| `cikarim_hatasi` | Metin bozuk: kırık tablo, karışık sütun, eksik metin. **Madde seçme, NONE kaydet** (§5, durum 6) |
+| `cikarim_hatasi` | Metin bozuk: kırık tablo, karışık sütun, eksik metin. **Madde seçme, NONE kaydet** (§5, durum 6); beyan türü boş bırakılabilir. Analizde "ilgisiz" NONE'dan ayrı sayılır |
 | `birden_fazla_anlam` | İki yorum da savunulabilir |
 | `kilavuz_belirsiz` | Kılavuz bu durumu kapsamıyor (eski "kılavuz-belirsiz:" gerekçesinin yerini alır) |
 | `yetersiz_kanit` | Madde ile bağ zayıf; 1 ile NONE arasında kaldın |
 
-Ekran ayrıca paragraf başına süreyi kendiliğinden tutar (ilk görünüşten kayda kadar). Süre etiketleme maliyetini raporlamak içindir; hız için acele etme.
+Ekran ayrıca paragraf başına süreyi kendiliğinden tutar: yalnızca paragraf ekranda etkinken sayılır, düzeltme süresi eklenir; 10 dakikayı aşan paragraf ara verilmiş sayılıp ortalamalara girmez. Süre etiketleme maliyetini raporlamak içindir; hız için acele etme.
+
+**Körleme kilidi.** Modelin önerisi ya da uyum (κ) ekranda bir kez gösterilince kör etiketler donar; ekran değişikliği kabul etmez. Pilotta ayrışan örneklerin düzeltmesi kılavuz v1 turunda (`pilot_v1`) yapılır (§7).
 
 Değer, birim, dönem ve hedef yılı **elle girilmez**: sayılar `report_service.verify.numbers` ile otomatik çıkarılır ve taslak doğrulamasında (S18) insan onayından geçer.
 
@@ -128,4 +130,4 @@ Pilotta en çok ayrışan durumlar bu tabloya eklenir.
 ## 9. Sürüm notları
 
 - v0 (2026-10-22): ilk taslak.
-- v0.1 (2026-10-23, pilot başlamadan): §3a beyan türü, §3b kanıt cümlesi, §3c emin değilim ve belirsizlik nedeni eklendi; çekirdek (§3) değişmedi. Karar: ADR-013. Şema sürümü `etiket-0.1`.
+- v0.1 (2026-10-23, pilot başlamadan): §3a beyan türü, §3b kanıt cümlesi, §3c emin değilim ve belirsizlik nedeni eklendi; çekirdek (§3) değişmedi. Karar: ADR-013. Şema sürümü `etiket-0.1`. Aynı gün, bağımsız incelemeden sonra: neden seçmek "emin değilim" demektir; çıkarım hatasında beyan türü boş bırakılabilir; süre etkin süredir; körleme kilidi.

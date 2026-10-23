@@ -52,6 +52,9 @@ if not queue:
     st.stop()
 
 row = queue[0]
+if row["paragraf_id"] in kor.pilot_kimlikleri(paths.data):
+    # Pilot paragrafının model önerisi insana ilk kez gösteriliyor: körleme açılır, kör etiketler donar (K1).
+    kor.korlemeyi_ac(paths.data, f"onay ekranında pilot önerisi gösterildi ({choice})")
 catalog = catalog_lookup(paths)
 item = catalog.get(row["madde_id"], {})
 

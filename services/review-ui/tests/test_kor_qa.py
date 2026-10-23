@@ -3,63 +3,14 @@
 import csv
 import importlib.util
 import json
-import shutil
 from datetime import date
 from pathlib import Path
 
 import pytest
 from streamlit.testing.v1 import AppTest
+from yardimci import IDS, ROOT, UI, _birim, _oneri_yaz
 
 from review_ui import kor, qa
-
-ROOT = Path(__file__).resolve().parents[3]
-UI = ROOT / "services/review-ui"
-KATALOG = ROOT / "data/catalog/catalog_v0.csv"
-IDS = {r["madde_id"] for r in csv.DictReader(KATALOG.open(encoding="utf-8"))}
-
-
-def _birim(i: int, sayfa: int = 3, rapor: str = "sirket-ornek-2025") -> dict:
-    return {
-        "paragraf_id": f"{rapor}-p{sayfa:03d}-{i:02d}",
-        "rapor_id": rapor,
-        "sayfa": sayfa,
-        "bolum_basligi": "Yönetişim",
-        "tur": "paragraf",
-        "metin": f"Sürdürülebilirlik Komitesi yılda iki kez Yönetim Kurulu'na sunum yapar. #{i} *kalın değil*",
-        "kaynak": "metin",
-    }
-
-
-@pytest.fixture
-def veri(tmp_path, monkeypatch):
-    """Geçici veri, rapor ve deney dizinleri; ekranlar bunları ortam değişkenlerinden okur."""
-    data = tmp_path / "data"
-    (data / "catalog").mkdir(parents=True)
-    shutil.copy(KATALOG, data / "catalog")
-    pilot = data / "labels" / "pilot"
-    (pilot / "birimler").mkdir(parents=True)
-    birimler = [_birim(i, sayfa=s) for s in (1, 2, 3) for i in range(1, 3)]
-    (pilot / "birimler" / "sirket-ornek-2025.jsonl").write_text(
-        "\n".join(json.dumps(b, ensure_ascii=False) for b in birimler), encoding="utf-8"
-    )
-    (pilot / "orneklem.jsonl").write_text(
-        "\n".join(json.dumps(b, ensure_ascii=False) for b in birimler[:3]), encoding="utf-8"
-    )
-    # öneri dosyası körleme denetimi için: kör ekran bunu ASLA göstermemeli
-    (data / "labels" / "proposals").mkdir(parents=True)
-    (data / "labels" / "proposals" / "pilot.csv").write_text("GIZLI_MODEL_ONERISI", encoding="utf-8")
-    raporlar = tmp_path / "raporlar" / "sirket"
-    raporlar.mkdir(parents=True)
-    import fitz
-
-    doc = fitz.open()
-    for s in range(3):
-        doc.new_page().insert_text((72, 72), f"Sayfa {s + 1}")
-    doc.save(raporlar / "ecoizge__sirket-ornek-2025.pdf")
-    monkeypatch.setenv("ECOIZGE_DATA_DIR", str(data))
-    monkeypatch.setenv("ECOIZGE_RAPOR_DIR", str(tmp_path / "raporlar"))
-    monkeypatch.setenv("ECOIZGE_REPORTS_DIR", str(tmp_path / "deney"))
-    return tmp_path
 
 
 # ---------- kör etiketleme mantığı ----------
@@ -233,30 +184,6 @@ def test_r_hil_01_yonlendirici_turkce_menu(veri):
 
 
 # ---------- code-reviewer 2026-10-23 bulguları (önce kırmızı yazıldı) ----------
-def _oneri_yaz(data: Path, birimler: list[dict], metin_on: str) -> Path:
-    from review_ui.logic import LABEL_HEADER, write_rows
-
-    satirlar = [
-        dict.fromkeys(LABEL_HEADER, "")
-        | {
-            "etiket_id": f"{b['paragraf_id']}:TSRS2-YON-06a",
-            "tur": "paragraf",
-            "rapor_id": b["rapor_id"],
-            "paragraf_id": b["paragraf_id"],
-            "sayfa": str(b["sayfa"]),
-            "metin": f"{metin_on} {b['paragraf_id']}",
-            "madde_id": "TSRS2-YON-06a",
-            "karsilama": "2",
-            "guven": "0.9",
-            "gerekce": "model gerekçesi",
-            "etiketleyen": "annotation-assistant",
-            "kaynak": "model",
-        }
-        for b in birimler
-    ]
-    hedef = data / "labels" / "proposals" / "pilot_v0.csv"
-    write_rows(hedef, satirlar)
-    return hedef
 
 
 def test_r_etk_01_onay_ekrani_pilot_bitmeden_pilot_onerisini_gostermez(veri):

@@ -10,7 +10,7 @@ from pathlib import Path
 
 import pytest
 from streamlit.testing.v1 import AppTest
-from test_kor_qa import IDS, ROOT, UI, _birim, _oneri_yaz
+from yardimci import IDS, ROOT, UI, _birim, _oneri_yaz
 
 from review_ui import analiz, kor, qa
 
@@ -20,6 +20,12 @@ D = date(2026, 10, 23)
 
 def _sayfa(ad: str) -> AppTest:
     return AppTest.from_file(str(UI / ad), default_timeout=60)
+
+
+def _analiz(ad: str) -> AppTest:
+    """Analiz ekranı adı paylaşılan oturumdan almaz (Ö4); ad kutusuna yazılır."""
+    at = _sayfa("ekranlar/analiz.py").run()
+    return at.text_input(key="ad_analiz").input(ad).run()
 
 
 # ---------- cümlelere bölme ----------
@@ -58,10 +64,10 @@ def test_cumlelere_bol_tablo_satir_satir():
 
 
 # ---------- paragraf kaydı ----------
-def _kaydet(cikti, birim, secimler, **kw):
-    ortak = {"beyan_turleri": ["yonetisim"], "kanit": {}, "belirsizlik": [], "emin": True, "sure_sn": 42}
-    ortak |= kw
-    return kor.kaydet(cikti, birim, secimler, "Mehmet Güneş", IDS, kw.pop("gerekce", ""), bugun=D, **ortak)
+def _kaydet(cikti, birim, secimler, gerekce="", ad="Mehmet Güneş", **kw):
+    alanlar = {"beyan_turleri": ["yonetisim"], "kanit": {}, "belirsizlik": [], "emin": True, "sure_sn": 42}
+    alanlar |= kw
+    return kor.kaydet(cikti, birim, secimler, ad, IDS, gerekce, bugun=D, **alanlar)
 
 
 def test_r_etk_01_paragraf_kaydi_yazilir_ve_dogrulanir(tmp_path):
@@ -82,17 +88,18 @@ def test_r_etk_01_paragraf_kaydi_yazilir_ve_dogrulanir(tmp_path):
 @pytest.mark.parametrize(
     "secimler,kw,igne",
     [
-        ({}, {"beyan_turleri": []}, "beyan türü"),
+        ({}, {"beyan_turleri": []}, "beyan türü seç"),
         ({}, {"beyan_turleri": ["uydurma"]}, "beyan türü"),
         ({"TSRS2-YON-06a": "2"}, {"kanit": {}}, "kanıt cümlesi"),
         ({"TSRS2-YON-06a": "1"}, {"kanit": {"TSRS2-YON-06a": [9]}}, "kanıt cümlesi"),
         ({}, {"emin": False, "belirsizlik": []}, "belirsizlik nedeni"),
-        ({}, {"belirsizlik": ["uydurma"]}, "belirsizlik nedeni"),
+        ({}, {"belirsizlik": ["uydurma"], "emin": False}, "belirsizlik nedeni"),
         (
             {"TSRS2-YON-06a": "2"},
-            {"kanit": {"TSRS2-YON-06a": [1]}, "belirsizlik": ["cikarim_hatasi"]},
+            {"kanit": {"TSRS2-YON-06a": [1]}, "belirsizlik": ["cikarim_hatasi"], "emin": False},
             "Çıkarım hatasında",
         ),
+        ({}, {"belirsizlik": ["eksik_baglam"]}, "Emin değilim"),  # Ö7
     ],
 )
 def test_r_etk_01_hatali_paragraf_kaydi_reddedilir(tmp_path, secimler, kw, igne):
@@ -208,9 +215,7 @@ def test_r_hil_01_analiz_ekrani(veri):
         veri / "deney/extraction-qa-elle.csv", "sirket-ornek-2025", 1, {"kirik_tablo"}, "Mehmet Güneş", "x"
     )
 
-    at = _sayfa("ekranlar/analiz.py")
-    at.session_state["_ad"] = "Mehmet Güneş"
-    at.run()
+    at = _analiz("Mehmet Güneş")
     assert not at.exception
     metin = " ".join(str(m.value) for m in [*at.markdown, *at.info, *at.caption])
     assert "pilot bitince" in metin  # uyum bölümü kör pilot sürerken kapalı
@@ -224,9 +229,7 @@ def test_r_etk_01_analiz_pilot_surerken_baskasinin_etiketini_gostermez(veri):
     orneklem = kor.orneklem_oku(data / "labels/pilot/orneklem.jsonl")
     _kaydet(kor.KorYollar(data).cikti("Mehmet Güneş"), orneklem[0], {"TSRS2-YON-06a": "2"},
             kanit={"TSRS2-YON-06a": [1]})  # fmt: skip
-    at = _sayfa("ekranlar/analiz.py")
-    at.session_state["_ad"] = "Zemzem Boyluğ"
-    at.run()
+    at = _analiz("Zemzem Boyluğ")
     assert not at.exception
     assert any(m.label == "Etiketlenen paragraf" and m.value == "0 / 3" for m in at.metric)
 
@@ -239,11 +242,10 @@ def test_r_etk_01_analiz_pilot_bitince_kappa(veri):
     for b in orneklem:
         _kaydet(cikti, b, {"TSRS2-YON-06a": "2"}, kanit={"TSRS2-YON-06a": [1]})
     _oneri_yaz(data, orneklem, "MODEL")  # model de hepsine YON-06a:2 dedi
-    at = _sayfa("ekranlar/analiz.py")
-    at.session_state["_ad"] = "Mehmet Güneş"
-    at.run()
+    at = _analiz("Mehmet Güneş")
     assert not at.exception
     assert any(m.label.startswith("κ") and m.value == "1,000" for m in at.metric)
+    assert kor.korleme_acildi(data)  # κ gösterilince kör etiketler donar (K1)
 
 
 def test_yonlendirici_analiz_sayfasi_var():
@@ -257,3 +259,168 @@ def test_dosya_csv_basligi_degismedi():
 
     with (ROOT / "data/labels/etiket_sablonu.csv").open(encoding="utf-8") as fh:
         assert next(csv.reader(fh)) == LABEL_HEADER
+
+
+# ---------- code-reviewer 2026-10-23 (şema 0.1) bulguları; önce kırmızı yazıldı ----------
+def test_k1_korleme_acilinca_kor_etiket_degistirilemez(veri):
+    data = veri / "data"
+    orneklem = kor.orneklem_oku(data / "labels/pilot/orneklem.jsonl")
+    cikti = kor.KorYollar(data).cikti("Mehmet Güneş")
+    _kaydet(cikti, orneklem[0], {}, beyan_turleri=["genel"])
+    kor.korlemeyi_ac(data, "test")
+    kilit = json.loads((cikti.parent / "pilot_v0.kilit.json").read_text(encoding="utf-8"))
+    assert kilit["neden"] == "test" and len(kilit["csv_sha256"]) == 64
+    with pytest.raises(ValueError, match="Körleme açıldı"):
+        _kaydet(cikti, orneklem[0], {}, beyan_turleri=["politika"])
+    kor.korlemeyi_ac(data, "ikinci kez")  # ilk kayıt korunur
+    assert json.loads((cikti.parent / "pilot_v0.kilit.json").read_text(encoding="utf-8"))["neden"] == "test"
+
+
+def test_k1_onay_ekrani_pilot_onerisini_gosterince_korlemeyi_acar(veri):
+    data = veri / "data"
+    (data / "labels/proposals/pilot.csv").unlink()
+    orneklem = kor.orneklem_oku(data / "labels/pilot/orneklem.jsonl")
+    cikti = kor.KorYollar(data).cikti("Mehmet Güneş")
+    for b in orneklem:
+        _kaydet(cikti, b, {}, beyan_turleri=["genel"])
+    _oneri_yaz(data, orneklem, "MODEL")
+    assert not kor.korleme_acildi(data)
+    _sayfa("ekranlar/etiket_onayi.py").run()
+    assert kor.korleme_acildi(data)
+    at = _sayfa("ekranlar/kor_etiketleme.py")
+    at.session_state["_ad"] = "Mehmet Güneş"
+    at.run()
+    assert not at.exception and not at.button  # donmuş: kayıt düğmesi yok
+    assert any("Körleme açıldı" in i.value for i in at.info)
+
+
+def test_o1_ikinci_dosya_yazilamazsa_ilki_geri_alinir(tmp_path, monkeypatch):
+    monkeypatch.setattr(kor.ortak, "_BEKLEME", 0)
+    cikti = tmp_path / "pilot_v0.csv"
+    _kaydet(cikti, _birim(1), {"TSRS2-YON-06a": "2"}, kanit={"TSRS2-YON-06a": [1]})
+    once_csv = cikti.read_bytes()
+    once_yan = kor.paragraf_yolu(cikti).read_bytes()
+    gercek = Path.replace
+
+    def secici(self, hedef):
+        if str(hedef).endswith(".paragraf.jsonl"):
+            raise PermissionError(32, "kilitli")
+        return gercek(self, hedef)
+
+    monkeypatch.setattr(Path, "replace", secici)
+    with pytest.raises(ValueError, match="başka bir programda açık"):
+        _kaydet(cikti, _birim(1), {}, beyan_turleri=["genel"])
+    assert cikti.read_bytes() == once_csv and kor.paragraf_yolu(cikti).read_bytes() == once_yan
+    assert not list(tmp_path.rglob("*.tmp"))
+
+
+def test_o1_o8_dogrulayici_kayitsiz_paragraf_ve_tur_hatasi(tmp_path):
+    from validate_data import validate_file
+
+    cikti = tmp_path / "pilot_v0.csv"
+    _kaydet(cikti, _birim(1), {}, beyan_turleri=["genel"])
+    kor.kaydet(cikti, _birim(2), {}, "Mehmet Güneş", IDS)  # şema 0 yolu: yan kayıt yok
+    yan = kor.paragraf_yolu(cikti)
+    assert any("paragraf kaydı yok" in e for e in validate_file(yan))
+    satir = json.loads(yan.read_text(encoding="utf-8").splitlines()[0]) | {"kanit": [1]}
+    yan.write_text(json.dumps(satir) + "\n", encoding="utf-8")
+    assert any("sözlüğü olmalı" in e for e in validate_file(yan))  # çökmez
+    yalniz = tmp_path / "yalniz" / "pilot_v0.paragraf.jsonl"
+    yalniz.parent.mkdir()
+    yalniz.write_text(yan.read_text(encoding="utf-8"), encoding="utf-8")
+    assert any("çekirdek CSV yok" in e for e in validate_file(yalniz))
+
+
+def test_o3_analiz_dosyasi_olmayan_ad_ve_olculemeyen_kappa(veri):
+    data = veri / "data"
+    (data / "labels/proposals/pilot.csv").unlink()
+    orneklem = kor.orneklem_oku(data / "labels/pilot/orneklem.jsonl")
+    cikti = kor.KorYollar(data).cikti("Mehmet Güneş")
+    for b in orneklem:
+        _kaydet(cikti, b, {}, beyan_turleri=["genel"])  # insan da model de hepsine NONE: κ ölçülemez
+    model = _oneri_yaz(data, orneklem, "MODEL")
+    model.write_text(
+        model.read_text(encoding="utf-8")
+        .replace(":TSRS2-YON-06a,", ":NONE,")
+        .replace(",TSRS2-YON-06a,2,", ",NONE,NONE,"),
+        encoding="utf-8",
+    )
+    at = _analiz("M. Güneş")  # dosyası yok
+    assert not at.exception
+    at = _analiz("Mehmet Güneş")
+    assert not at.exception
+    assert any("ölçülecek" in i.value for i in at.info)
+
+
+def test_o4_analiz_adi_oturumdan_almaz(veri):
+    at = _sayfa("ekranlar/analiz.py")
+    at.session_state["_ad"] = "Mehmet Güneş"
+    at.run()
+    assert not at.exception and not at.metric
+    assert at.text_input(key="ad_analiz").value == ""
+
+
+def test_o5_kanit_metinden_yeniden_eslenir():
+    cumleler = ["A cümlesi.", "B cümlesi.", "C cümlesi."]
+    kayit = {"kanit": {"M": [3]}, "kanit_metni": {"M": ["B cümlesi."]}, "bolme_surumu": "eski"}
+    assert kor.kanit_varsayilan(kayit, "M", cumleler) == [2]  # numara değil metin esas
+    assert kor.kanit_varsayilan({"kanit": {"M": [9]}, "kanit_metni": {"M": ["yok"]}}, "M", cumleler) == []
+    assert kor.kanit_varsayilan({}, "M", cumleler) == []
+
+
+def test_o5_kayitta_bolme_surumu(tmp_path):
+    cikti = tmp_path / "c.csv"
+    _kaydet(cikti, _birim(1), {}, beyan_turleri=["genel"])
+    assert kor.paragraf_kayitlari(cikti)[_birim(1)["paragraf_id"]]["bolme_surumu"] == kor.BOLME_SURUMU
+
+
+def test_o6_aktif_sure_ve_duzeltme():
+    durum: dict = {}
+    kor.sure_guncelle(durum, "A", 0.0)
+    kor.sure_guncelle(durum, "B", 10.0)  # A'da 10 sn
+    kor.sure_guncelle(durum, "A", 15.0)  # B'de 5 sn
+    assert kor.sure_al(durum, "A", 18.0) == 13
+    assert kor.sure_al(durum, "B", 18.0) == 5
+
+
+def test_o6_duzeltme_suresi_eklenir_ve_kesintili_ayrilir(tmp_path):
+    orneklem = [_birim(i) for i in (1, 2, 3)]
+    cikti = tmp_path / "c.csv"
+    _kaydet(cikti, orneklem[0], {}, beyan_turleri=["genel"], sure_sn=120)
+    _kaydet(cikti, orneklem[0], {}, beyan_turleri=["politika"], sure_sn=8)
+    assert kor.paragraf_kayitlari(cikti)[orneklem[0]["paragraf_id"]]["sure_sn"] == 128
+    _kaydet(cikti, orneklem[1], {}, beyan_turleri=["genel"], sure_sn=4000)  # öğle arası
+    oz = analiz.kor_ozeti(orneklem, kor.yapilanlar(cikti), kor.paragraf_kayitlari(cikti))
+    assert oz["sure_toplam_sn"] == 128 and oz["sure_medyan_sn"] == 128 and oz["sure_kesintili"] == 1
+
+
+@pytest.mark.parametrize(
+    "metin,beklenen",
+    [
+        ("Emisyon azaldı. %12 düşüş sağlandı.", ["Emisyon azaldı.", "%12 düşüş sağlandı."]),
+        # sayıdan sonraki nokta bölmez ("11. Kalkınma"); "s. 40." de birleşik kalır, yanlış bölünmez
+        ("Ayrıntılar için bkz. s. 40. Komite toplandı.", ["Ayrıntılar için bkz. s. 40. Komite toplandı."]),
+        ("Hedef yılı 2030. Bunun için plan var.", ["Hedef yılı 2030.", "Bunun için plan var."]),
+        ("“Azaldı.” Komite toplandı.", ["“Azaldı.”", "Komite toplandı."]),
+        ("11. Kalkınma Planı ile uyumludur.", ["11. Kalkınma Planı ile uyumludur."]),
+        ("Doç. Dr. Ayşe Yılmaz katıldı.", ["Doç. Dr. Ayşe Yılmaz katıldı."]),
+    ],
+)
+def test_k1_bolme_ek_durumlar(metin, beklenen):
+    assert kor.cumlelere_bol(metin, "paragraf") == beklenen
+
+
+def test_k2_k3_k4_k5_k6_k7_bicim_ve_kucukler(tmp_path):
+    assert analiz.yuzde(1, 3) == "%33,3" and analiz.yuzde(1, 8) == "%12,5" and analiz.yuzde(0, 0) == "—"
+    assert analiz.csv_baytlari([{"a": "1", "b": "x"}]).decode("utf-8-sig").splitlines()[0] == "a;b"
+    assert analiz.etiket_adi({"genel": "Genel bilgi: açıklama"}, "eski_kod") == "eski_kod"
+    c = tmp_path / "qa.csv"
+    qa.kaydet(c, "r1", 1, set(), "Mehmet Güneş")
+    assert analiz.qa_ozeti(qa.kayitlar(c), "mehmet güneş")["sayfa"] == 1
+    orneklem = [_birim(1, rapor="sirket-a-2025"), _birim(2, rapor="sirket-b-2025")]
+    cikti = tmp_path / "pilot_v0.csv"
+    _kaydet(cikti, orneklem[0], {}, beyan_turleri=[], belirsizlik=["cikarim_hatasi"], emin=False)  # K-7
+    oz = analiz.kor_ozeti(orneklem, kor.yapilanlar(cikti), kor.paragraf_kayitlari(cikti))
+    rapor = {r["rapor_id"]: r for r in oz["rapor"]}
+    assert rapor["sirket-b-2025"]["etiketli"] == 0 and rapor["sirket-b-2025"]["none"] == 0
+    assert oz["cikarim_hatasi"] == 1 and oz["duzey"].get("NONE", 0) == 0

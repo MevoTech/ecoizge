@@ -10,3 +10,4 @@
 | Rapor | Aşama | Tarih | Sonuç |
 |---|---|---|---|
 | [S04-S05-S07-inceleme-2026-10-23.md](S04-S05-S07-inceleme-2026-10-23.md) | S04, S05, S07 (pilot ekranları, commit 7b4ecaf) | 2026-10-23 | 1 kritik, 6 önemli; düzeltme durumu raporda |
+| [S05-S07-inceleme-2026-10-23-sema.md](S05-S07-inceleme-2026-10-23-sema.md) | S05, S07 (etiket şeması 0.1, analiz ekranı; commit 999683c) | 2026-10-23 | 1 kritik, 8 önemli; Ö2 açık (KL-12) |

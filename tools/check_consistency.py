@@ -67,6 +67,7 @@ FUTURE_PREFIXES = (
     "services/report-service/report_service/api/", "services/report-service/report_service/db/",
     "services/report-service/report_service/core/",
     "docs/research/", "docs/labeling/etiket_kilavuzu_v1.md", "data/labels/proposals/pilot_v0.csv", "data/labels/blind/",
+    "data/labels/pilot/etiketleyiciler.json",
 )  # fmt: skip
 PATH_ROOTS = (
     ".claude/", ".agents/", "docs/", "tools/", "services/", "shared/", "data/", "tests/",

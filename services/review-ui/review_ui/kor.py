@@ -12,24 +12,32 @@ Körleme kuralları:
 from __future__ import annotations
 
 import hashlib
+import importlib.util
 import json
 import re
 import unicodedata
 from dataclasses import dataclass
-from datetime import date
+from datetime import UTC, date, datetime
 from pathlib import Path
 
 from review_ui import ortak
-from review_ui.logic import LABEL_HEADER, read_rows, write_rows
+from review_ui.logic import LABEL_HEADER, read_rows
 
-SEMA_YOLU = Path(__file__).resolve().parents[3] / "data" / "labels" / "etiket_semasi.json"
-SEMA = json.loads(SEMA_YOLU.read_text(encoding="utf-8"))  # ADR-013: paragraf alanlarının tek kaynağı
+REPO = Path(__file__).resolve().parents[3]
+_spec = importlib.util.spec_from_file_location("etiket_kurallari", REPO / "tools" / "etiket_kurallari.py")
+kurallar = importlib.util.module_from_spec(_spec)
+_spec.loader.exec_module(kurallar)  # paragraf kurallarının tek uygulaması; doğrulayıcı da kullanır
+SEMA = kurallar.sema_oku()  # ADR-013: paragraf alanlarının tek kaynağı (data/labels/etiket_semasi.json)
 SEMA_SURUMU: str = SEMA["sema_surumu"]
 BEYAN_TURLERI: dict[str, str] = SEMA["beyan_turleri"]
 BELIRSIZLIK_NEDENLERI: dict[str, str] = SEMA["belirsizlik_nedenleri"]
 SEVIYELER = ["2", "1", "U"]  # NONE ayrı: hiçbir madde seçilmezse yazılır
 SEVIYE_ADI = {"2": "2 · Tam", "1": "1 · Kısmi / yüzeysel", "U": "U · Uygulanamaz (gerekçeli)"}
 ORNEKLEM_SURUMU = "pilot_v0"
+BOLME_SURUMU = (
+    kurallar.BOLME_SURUMU
+)  # cumlelere_bol kuralı değişirse artırılır; kanıt metinden yeniden eşlenir
+KESINTI_ESIGI_SN = 600  # bu süreyi aşan paragraf "kesintili" sayılır, toplam ve medyana girmez
 
 
 def ad_kimligi(ad: str) -> str:
@@ -68,27 +76,7 @@ def yapilanlar(cikti: Path) -> dict[str, list[dict[str, str]]]:
     return out
 
 
-_CUMLE_SONU = re.compile(r"(?<=[^\d\s.][.!?…])\s+(?=[\"“(•A-ZÇĞİÖŞÜ0-9])")
-_KISALTMA = re.compile(r"(?:\b[A-ZÇĞİÖŞÜ]\.)+$|\b(?:vb|vs|bkz|örn|Dr|Prof|No|Şti|Tic|San)\.$")
-
-
-def cumlelere_bol(metin: str, tur: str) -> list[str]:
-    """Birimi kanıt seçimi için numaralanacak parçalara böler.
-
-    Tablo satır satır bölünür. Paragrafta cümle sonu: nokta, ünlem ya da soru işaretinden sonra boşluk
-    ve büyük harf/rakam. Rakamdan sonraki nokta ("Tablo 1. Sera", "2. sırada") ve kısaltmalar
-    ("A.Ş.", "bkz.") bölmez. Basit bir kuraldır; yanlış bölme kanıt seçimini zorlaştırır ama
-    etiketi bozmaz (seçilen numaralar metinle birlikte saklanır).
-    """
-    if tur == "tablo":
-        return [s.strip() for s in metin.split("\n") if s.strip()] or [metin.strip()]
-    parcalar: list[str] = []
-    for aday in _CUMLE_SONU.split(" ".join(metin.split())):
-        if parcalar and _KISALTMA.search(parcalar[-1]):
-            parcalar[-1] += " " + aday
-        else:
-            parcalar.append(aday)
-    return [p for p in parcalar if p] or [metin.strip()]
+cumlelere_bol = kurallar.cumlelere_bol  # tek kaynak: tools/etiket_kurallari.py
 
 
 def paragraf_yolu(cikti: Path) -> Path:
@@ -113,24 +101,41 @@ def paragraf_kaydi_denetle(
     emin: bool,
     cumle_sayisi: int,
 ) -> None:
-    """Kılavuz §3a–3c. Hata varsa ValueError (ekranda gösterilir); hiçbir dosya yazılmaz."""
-    if not beyan_turleri or set(beyan_turleri) - BEYAN_TURLERI.keys():
-        raise ValueError("En az bir beyan türü seç (kılavuz §3a); bilinmeyen beyan türü kabul edilmez")
-    bilinmeyen = set(belirsizlik) - BELIRSIZLIK_NEDENLERI.keys()
-    if bilinmeyen:
-        raise ValueError(f"bilinmeyen belirsizlik nedeni: {sorted(bilinmeyen)}")
-    if not emin and not belirsizlik:
-        raise ValueError("'Emin değilim' işaretlendiyse en az bir belirsizlik nedeni seç (kılavuz §3c)")
-    if "cikarim_hatasi" in belirsizlik and secimler:
-        raise ValueError("Çıkarım hatasında madde seçilmez; NONE kaydet (kılavuz §5, durum 6)")
-    if set(kanit) - set(secimler):
-        raise ValueError("Kanıt cümlesi yalnızca seçili maddeler için verilir")
-    for madde, seviye in secimler.items():
-        cumleler = kanit.get(madde, [])
-        if seviye in ("2", "1") and not cumleler:
-            raise ValueError(f"{madde}: 2 ya da 1 için en az bir kanıt cümlesi seç (kılavuz §3b)")
-        if any(not (isinstance(i, int) and 1 <= i <= cumle_sayisi) for i in cumleler):
-            raise ValueError(f"{madde}: kanıt cümlesi numarası 1–{cumle_sayisi} arasında olmalı")
+    """Kılavuz §3a–3c (`tools/etiket_kurallari.py`). Hata varsa ValueError; hiçbir dosya yazılmaz."""
+    hatalar = kurallar.kural_hatalari(secimler, beyan_turleri, kanit, belirsizlik, emin, cumle_sayisi, SEMA)
+    if hatalar:
+        raise ValueError(hatalar[0])
+
+
+def kanit_varsayilan(kayit: dict, madde: str, cumleler: list[str]) -> list[int]:
+    """Kaydedilmiş kanıtın bugünkü cümle numaraları. Numara değil metin esas alınır (Ö5): bölme kuralı
+    değişse de doğru cümle seçili gelir; metni bulunamayan kanıt seçilmez."""
+    metinler = set(kayit.get("kanit_metni", {}).get(madde, []))
+    return [i for i, c in enumerate(cumleler, start=1) if c in metinler]
+
+
+def sure_guncelle(durum: dict, pid: str, simdi: float) -> None:
+    """Ekrandaki etkin paragrafı izler; paragraf değişince öncekinin süresi biriktirilir (Ö6)."""
+    if durum.get("aktif") != pid:
+        if durum.get("aktif") is not None:
+            birikim = durum.setdefault("birikim", {})
+            birikim[durum["aktif"]] = birikim.get(durum["aktif"], 0.0) + simdi - durum["basla"]
+        durum["aktif"], durum["basla"] = pid, simdi
+
+
+def sure_al(durum: dict, pid: str, simdi: float) -> int:
+    """Paragrafın ekranda etkin kaldığı toplam süre (saniye)."""
+    toplam = durum.get("birikim", {}).get(pid, 0.0)
+    if durum.get("aktif") == pid:
+        toplam += simdi - durum["basla"]
+    return int(round(toplam))
+
+
+def sure_sifirla(durum: dict, pid: str, simdi: float) -> None:
+    """Kayıttan sonra: aynı paragrafın sonraki düzeltmesi yalnızca yeni süreyi sayar."""
+    durum.setdefault("birikim", {}).pop(pid, None)
+    if durum.get("aktif") == pid:
+        durum["basla"] = simdi
 
 
 def ilerleme(orneklem: list[dict], yapilan: dict) -> tuple[int, int, list[str]]:
@@ -159,6 +164,37 @@ def ozet_denetle(cikti: Path, ozet: str) -> str | None:
         "Pilot örneklem değişmiş: bu etiket dosyası başka bir örneklemle başlatılmış "
         f"({eski[:12]}…, şimdiki {ozet[:12]}…). Kayıt durduruldu; orkestratöre bildir."
     )
+
+
+def _kilit_yolu(blind_dizini: Path, kimlik: str) -> Path:
+    return blind_dizini / kimlik / f"{ORNEKLEM_SURUMU}.kilit.json"
+
+
+def korleme_acildi(data: Path) -> bool:
+    """Model önerisi ya da uyum (κ) bir kez gösterildiyse True: kör etiketler donmuştur (K1)."""
+    return any((data / "labels" / "blind").glob(f"*/{ORNEKLEM_SURUMU}.kilit.json"))
+
+
+def korlemeyi_ac(data: Path, neden: str) -> None:
+    """Körlemenin açıldığı anı kaydeder ve kör etiketleri dondurur. Var olan kilit değiştirilmez.
+
+    Her etiketleyicinin dizinine `pilot_v0.kilit.json`: zaman, neden ve o anki CSV ile paragraf
+    kaydının SHA-256 özetleri. Sonradan değişiklik bu özetlerle fark edilir; düzeltmeler kılavuz v1
+    turunda (`pilot_v1`) yapılır.
+    """
+    blind = data / "labels" / "blind"
+    for csv_yolu in sorted(blind.glob(f"*/{ORNEKLEM_SURUMU}.csv")):
+        kilit = _kilit_yolu(blind, csv_yolu.parent.name)
+        if kilit.exists():
+            continue
+        yan = paragraf_yolu(csv_yolu)
+        icerik = {
+            "zaman": datetime.now(UTC).isoformat(timespec="seconds"),
+            "neden": neden,
+            "csv_sha256": hashlib.sha256(csv_yolu.read_bytes()).hexdigest(),
+            "paragraf_sha256": hashlib.sha256(yan.read_bytes()).hexdigest() if yan.exists() else None,
+        }
+        ortak.atomik_metin_yaz(kilit, json.dumps(icerik, ensure_ascii=False, indent=1) + "\n")
 
 
 def pilot_kimlikleri(data: Path) -> set[str]:
@@ -233,6 +269,11 @@ def kaydet(
     """
     if not etiketleyen.strip():
         raise ValueError("etiketleyen adı zorunlu")
+    if any(cikti.parent.parent.glob(f"*/{ORNEKLEM_SURUMU}.kilit.json")):
+        raise ValueError(
+            "Körleme açıldı (model önerisi ya da κ gösterildi); kör etiketler artık değiştirilemez. "
+            "Düzeltmeler kılavuz v1 turunda yapılır."
+        )
     for madde, seviye in secimler.items():
         if seviye is None:
             raise ValueError(f"{madde}: karşılama düzeyini seç (2, 1 ya da U)")
@@ -267,8 +308,11 @@ def kaydet(
     ] or [temel | {"etiket_id": f"{birim['paragraf_id']}:NONE", "madde_id": "NONE", "karsilama": "NONE"}]
 
     kalan = [r for r in read_rows(cikti) if r["paragraf_id"] != birim["paragraf_id"]]
-    write_rows(cikti, kalan + yeni)
+    yazilacak = [(cikti, ortak.csv_metni(LABEL_HEADER, kalan + yeni))]
     if beyan_turleri is not None:
+        onceki = paragraf_kayitlari(cikti).get(birim["paragraf_id"], {})
+        if isinstance(sure_sn, int) and isinstance(onceki.get("sure_sn"), int):
+            sure_sn += onceki["sure_sn"]  # düzeltme süresi ilk etiketleme süresine eklenir (Ö6)
         kayit = {
             "paragraf_id": birim["paragraf_id"],
             "rapor_id": birim["rapor_id"],
@@ -281,14 +325,17 @@ def kaydet(
             "emin": bool(emin),
             "sure_sn": sure_sn,
             "cumle_sayisi": len(cumleler),
+            "bolme_surumu": BOLME_SURUMU,
+            "birim_turu": birim.get("tur", "paragraf"),
             "etiketleyen": etiketleyen.strip(),
             "tarih": (bugun or date.today()).isoformat(),
             "sema_surumu": SEMA_SURUMU,
         }
         diger = [k for pid, k in paragraf_kayitlari(cikti).items() if pid != birim["paragraf_id"]]
-        ortak.atomik_metin_yaz(
-            paragraf_yolu(cikti), "".join(json.dumps(k, ensure_ascii=False) + "\n" for k in [*diger, kayit])
+        yazilacak.append(
+            (paragraf_yolu(cikti), "".join(json.dumps(k, ensure_ascii=False) + "\n" for k in [*diger, kayit]))
         )
     if orneklem_ozeti and not _ozet_yolu(cikti).exists():
-        _ozet_yolu(cikti).write_text(orneklem_ozeti + "\n", encoding="utf-8")
+        yazilacak.append((_ozet_yolu(cikti), orneklem_ozeti + "\n"))
+    ortak.atomik_coklu_yaz(yazilacak)  # ya hepsi ya hiçbiri (Ö1)
     return yeni

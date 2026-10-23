@@ -140,7 +140,8 @@ def _paragraf_dosyalari(tmp_path, kayit_degisikligi=None, karsilama="2"):
     kayit = {
         "paragraf_id": "p1", "rapor_id": "sirket-x-2025", "beyan_turleri": ["yonetisim"],
         "kanit": {"TSRS2-YON-06a": [1]}, "kanit_metni": {"TSRS2-YON-06a": ["Komite toplanır."]},
-        "belirsizlik": [], "emin": True, "sure_sn": 12, "cumle_sayisi": 1, "etiketleyen": "M",
+        "belirsizlik": [], "emin": True, "sure_sn": 12, "cumle_sayisi": 1, "bolme_surumu": "2",
+        "birim_turu": "paragraf", "etiketleyen": "M",
         "tarih": "2026-10-23", "sema_surumu": sema["sema_surumu"],
     }  # fmt: skip
     kayit |= kayit_degisikligi or {}
@@ -157,15 +158,26 @@ def test_r_etk_01_paragraf_kaydi_gecerli(tmp_path):
 def test_r_etk_01_paragraf_kaydi_hatalari(tmp_path):
     _, yan = _paragraf_dosyalari(tmp_path, {"beyan_turleri": ["uydurma"], "emin": False, "sema_surumu": "x"})
     errs = validate_file(yan)
-    assert any("beyan_turleri" in e for e in errs)
-    assert any("belirsizlik nedeni yok" in e for e in errs)
+    assert any("beyan türü" in e for e in errs)
+    assert any("en az bir belirsizlik nedeni" in e for e in errs)
     assert any("şema sürümü" in e for e in errs)
+
+
+def test_r_etk_01_paragraf_kaydi_kanit_metni_eslesir(tmp_path):
+    _, yan = _paragraf_dosyalari(tmp_path, {"kanit_metni": {"TSRS2-YON-06a": ["Başka cümle."]}})
+    assert any("eşleşmiyor" in e for e in validate_file(yan))
+    _, yan = _paragraf_dosyalari(tmp_path, {"etiketleyen": "Z"})
+    assert any("etiketleyen çekirdek CSV ile farklı" in e for e in validate_file(yan))
+    _, yan = _paragraf_dosyalari(
+        tmp_path, {"kanit": {}, "kanit_metni": {}, "belirsizlik": ["cikarim_hatasi"], "emin": False}
+    )
+    assert any("Çıkarım hatasında madde seçilmez" in e for e in validate_file(yan))
 
 
 def test_r_etk_01_paragraf_kaydi_kanit_cekirdekle_tutarli(tmp_path):
     _, yan = _paragraf_dosyalari(tmp_path, {"kanit": {}})
-    assert any("kanıtı olmayan 2/1 madde" in e for e in validate_file(yan))
+    assert any("en az bir kanıt cümlesi" in e for e in validate_file(yan))
     _, yan = _paragraf_dosyalari(tmp_path, {"kanit": {"TSRS2-YON-06a": [3]}})
-    assert any("1–1 dışında" in e for e in validate_file(yan))
+    assert any("1–1 arasında" in e for e in validate_file(yan))
     _, yan = _paragraf_dosyalari(tmp_path, karsilama="U")
-    assert any("2/1 verilmemiş maddeye" in e for e in validate_file(yan))
+    assert any("yalnızca 2 ya da 1 verilen maddeler" in e for e in validate_file(yan))

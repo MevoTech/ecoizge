@@ -123,7 +123,7 @@ Teknik gerekçe: S05 etiket üretmeden S12–S14, S19 ölçülemez. S08'deki kar
   - T4 ⬜ `annotation-assistant` aynı 50 paragrafa, insan etiketini görmeden öneri üretir → `data/labels/proposals/pilot_v0.csv`.
   - T5 ⬜ κ (insan–model) ve anlaşmazlık listesi → `reports/experiments/kappa-pilot.md` (`evaluator`).
   - T6 ⬜ Kılavuz v1: ayrışan durumlar §5'e işlenir; ✋ Mehmet onaylar.
-  - T7 ⬜ D-06 kabul edilirse Zemzem 30–50 paragraflık alt kümeyi etiketler (U-15); insan–insan κ ayrı raporlanır.
+  - T7 ⬜ D-06 kabul edilirse Zemzem 30–50 paragraflık alt kümeyi etiketler (U-15); insan–insan κ ayrı raporlanır. Önce beklenen etiketleyiciler ve kapsamları dosyası, pilot kilidi buna bağlanır (KL-12).
   - T8 ⬜ Model önerisi de beyan türü ve kanıt cümlesi üretir (`to_proposals` şema 0.1); beyan türünde uyum ve kanıt örtüşmesi (Jaccard) analiz ekranına eklenir.
 - **Çıktılar:** Kör etiketler, öneriler, κ raporu, `docs/labeling/etiket_kilavuzu_v1.md`.
 - **Kabul:** İki etiket dosyası doğrulayıcıdan geçer. κ raporu insan–model ve (varsa) insan–insan için ayrı. Anlaşmazlıklar kılavuz §5'e işlenmiş.
