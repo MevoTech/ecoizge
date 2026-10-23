@@ -83,20 +83,30 @@ def test_r_tab_05_kutusuz_altin_tablo_icerikle_eslesir():
     assert [x["tahmin"] for x in s["tablo_bazinda"]] == ["t2"]
 
 
-def _olgu(deger, satir="Kapsam 1", donem="2024", birim="tCO2e", sayfa=1):
-    return {"sayfa": sayfa, "deger": deger, "birim": birim, "donem": donem, "satir_yolu": [satir]}
+def _olgu(deger, satir="Kapsam 1", donem="2024", birim="tCO2e", sayfa=1, tablo_id="t"):
+    return {
+        "sayfa": sayfa,
+        "deger": deger,
+        "birim": birim,
+        "donem": donem,
+        "satir_yolu": [satir],
+        "tablo_id": tablo_id,
+    }
 
 
 def test_r_tab_05_olgu_prf_ve_yalniz_deger():
     gercek = [_olgu(12450), _olgu(13100, donem="2025"), _olgu(31200, "Kapsam 2")]
     tahmin = [_olgu(12450), _olgu(13100, donem="2024"), _olgu(99, "Kapsam 3")]
-    s = to.olgu_prf(gercek, tahmin)
+    s = to.olgu_prf(gercek, tahmin, {"t": "t"})
     assert (s["tp"], s["p"], s["r"]) == (1, pytest.approx(1 / 3), pytest.approx(1 / 3))
     assert s["yalniz_deger"]["tp"] == 2  # 13.100 değeri doğru, dönemi yanlış
 
 
 def test_r_tab_05_olgu_satir_basligi_turkce_buyuk_kucuk_esit():
-    assert to.olgu_prf([_olgu(1, "KAPSAM 1 (İSTANBUL)")], [_olgu(1, "Kapsam 1 (istanbul)")])["tp"] == 1
+    assert (
+        to.olgu_prf([_olgu(1, "KAPSAM 1 (İSTANBUL)")], [_olgu(1, "Kapsam 1 (istanbul)")], {"t": "t"})["tp"]
+        == 1
+    )
 
 
 def test_r_tab_05_cli_run_id_zorunlu(tmp_path, capsys):
@@ -111,3 +121,31 @@ def test_r_tab_05_cli_run_id_zorunlu(tmp_path, capsys):
     sonuc = json.loads(out.read_text(encoding="utf-8"))
     assert sonuc["run_id"] == "deneme-1" and len(sonuc["sha256"]["gercek"]) == 64
     assert sonuc["tespit"]["f1"] == 1.0
+
+
+# ---------- code-reviewer bulguları (2026-10-23) ----------
+
+
+def test_r_tab_05_bulgu9_buyuk_tablo_makul_surede():
+    import time
+
+    a = [[f"h{r}-{c}" if r % 7 else "" for c in range(10)] for r in range(120)]
+    b = [row[:] for row in a]
+    b[5][3] = "x"
+    t0 = time.perf_counter()
+    f, _, _ = to.factored_2dmss(a, b, to.lcs_benzerligi)
+    assert f > 0.99 and time.perf_counter() - t0 < 60
+
+
+def test_r_tab_05_bulgu10_birlesik_tablonun_ikinci_sayfa_olgulari_eslesir():
+    """Altın küme tabloyu tek sayfaya yazar; tahmin iki sayfaya bölünmüş tabloyu birleştirir. Olgular tablo
+    eşlemesi üzerinden karşılaştırılır; hücre sayfası anahtara girmez."""
+    gercek_t = [_tablo(A, "g1", 51, (0, 0, 0, 0))]
+    tahmin_t = [_tablo(A, "t1", 51, (0, 0, 100, 100))]
+    gercek = [dict(_olgu(12450), tablo_id="g1"), dict(_olgu(31200, "Kapsam 2"), tablo_id="g1")]
+    tahmin = [
+        dict(_olgu(12450, sayfa=51), tablo_id="t1"),
+        dict(_olgu(31200, "Kapsam 2", sayfa=52), tablo_id="t1"),
+    ]
+    s = to.olc(gercek_t, tahmin_t, gercek, tahmin)
+    assert s["olgu"]["tp"] == 2 and s["olgu"]["f1"] == 1.0

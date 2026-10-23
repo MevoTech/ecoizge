@@ -189,3 +189,32 @@ def test_r_tab_02_alt_simge_ayri_yazilmis_co2e(metin):
     """Regresyon (2026-10-23, Klimasan 2025 s. 51, Docling metni): alt simge '2' ayrı yazılınca birim 'ton' sanılıyordu."""
     taban, _ = birim_bul(metin)
     assert taban == "tCO2e"
+
+
+# ---------- code-reviewer bulguları (2026-10-23, S28 incelemesi) ----------
+
+
+def test_r_tab_02_bulgu1_m3_ust_simgesi_dipnot_degil():
+    h = hucre_degeri("1.200 m³")
+    assert h is not None and (h.deger, h.birim, h.dipnot) == (1200, "m3", ())
+
+
+def test_r_tab_02_bulgu1_sayidan_sonra_ust_simge_dipnottur():
+    h = hucre_degeri("31.200¹")
+    assert h is not None and h.dipnot == ("¹",)
+
+
+def test_r_ver_01_bulgu7_yil_ve_para_birimi_adi_yil_kalir():
+    """'2025 Avro Bölgesi' bir tutar değildir; serbest metin denetimi geçerli taslağı reddetmesin."""
+    qs = extract_numbers("2025 Avro Bölgesi'nde büyüme yavaşladı.")
+    assert len(qs) == 1 and qs[0].is_year and qs[0].unit is None
+
+
+def test_r_ver_01_bulgu7_on_ekli_para_birimi():
+    assert match(_one("TL 805.299 tutarında"), [_one("805.299 TL")]) is not None
+    assert _one("€ 16.000 yatırım").unit == "EUR"
+
+
+def test_r_ver_01_bulgu8_buyuk_harfli_olcek():
+    assert hucre_degeri("1,5 MİLYAR TL").deger == pytest.approx(1.5e9)
+    assert _one("2,5 MİLYON ton").value == pytest.approx(2.5e6)

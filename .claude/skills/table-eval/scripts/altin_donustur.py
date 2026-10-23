@@ -32,6 +32,13 @@ import tables as tb  # noqa: E402
 import tablo_kurallari as tk  # noqa: E402
 
 
+def _utf8_cikti() -> None:
+    """Windows'ta yönlendirilen çıktı cp1254 olabilir; '→', '₂' yazarken çökmesin (inceleme bulgu 15)."""
+    for akim in (sys.stdout, sys.stderr):
+        if hasattr(akim, "reconfigure"):
+            akim.reconfigure(encoding="utf-8", errors="replace")
+
+
 class CSVHatasi(ValueError):
     pass
 
@@ -70,9 +77,18 @@ def izgaraya_cevir(satirlar: list[list[str]], sayfa: int) -> tuple[list[dict], i
     return hucreler, n, m
 
 
-def csv_oku(yol: Path) -> list[list[str]]:
-    metin = yol.read_text(encoding="utf-8-sig")
-    ayrac = ";" if metin.count(";") >= metin.count(",") else ","
+def csv_oku(yol: Path, ayrac: str = ";") -> list[list[str]]:
+    """Türkçe Excel CSV'si: ayraç varsayılan `;` (Türkçe ondalık virgülüyle karışmasın, inceleme bulgu 11).
+
+    "CSV UTF-8" seçeneği UTF-8 (BOM'lu) yazar; düz "CSV" seçeneği Windows-1254 yazar: UTF-8 çözülemezse
+    cp1254 denenir ve uyarı verilir.
+    """
+    ham = yol.read_bytes()
+    try:
+        metin = ham.decode("utf-8-sig")
+    except UnicodeDecodeError:
+        metin = ham.decode("cp1254")
+        print(f"UYARI: {yol.name} UTF-8 değil, Windows-1254 olarak okundu", file=sys.stderr)
     return [s for s in csv.reader(io.StringIO(metin), delimiter=ayrac) if any(x.strip() for x in s)]
 
 
@@ -116,9 +132,11 @@ def main(argv: list[str]) -> int:
     ap.add_argument("--baslik-satiri", type=int, required=True)
     ap.add_argument("--baslik", default="")
     ap.add_argument("--out-dir", type=Path, required=True)
+    ap.add_argument("--ayrac", default=";", help="CSV ayracı (Türkçe Excel: ;)")
     a = ap.parse_args(argv)
+    _utf8_cikti()
     try:
-        t, olgular = donustur(csv_oku(a.csv), a.rapor_id, a.sayfa, a.sira, a.baslik_satiri, a.baslik)
+        t, olgular = donustur(csv_oku(a.csv, a.ayrac), a.rapor_id, a.sayfa, a.sira, a.baslik_satiri, a.baslik)
     except CSVHatasi as e:
         print(f"HATA: {e}", file=sys.stderr)
         return 1

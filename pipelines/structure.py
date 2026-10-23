@@ -42,15 +42,30 @@ def _bitis(metin: str) -> str:
 
 
 def paragraflara_bagla(tablolar: list[dict], birimler: list[dict]) -> None:
-    """Her tabloyu, ilk sayfasındaki `tur=tablo` birimlerinden metnini içerene bağlar (yerinde)."""
+    """Her tabloyu, ilk sayfasındaki `tur=tablo` birimlerinden metnini içerene bağlar (yerinde).
+
+    Bire birdir: bir paragraf birimi en çok bir tabloya bağlanır. İpucu, başlık ve ilk dolu hücrelerdir;
+    `extract.py` ile bu modül başlığı farklı seçebildiği için başlık tutmazsa yalnızca hücrelerle denenir.
+    """
+    kullanilan: set[str] = set()
     for t in tablolar:
         adaylar = [u for u in birimler if u["tur"] == "tablo" and u["sayfa"] == t["sayfalar"][0]]
-        ipuclari = [_bitis(t["baslik"])] if t["baslik"] else []
-        ipuclari += [_bitis(h["metin"]) for h in t["hucreler"] if h["metin"].strip()][:3]
-        for u in adaylar:
-            metin = _bitis(u["metin"])
-            if ipuclari and all(i in metin for i in ipuclari[:2]):
+        hucreler = [_bitis(h["metin"]) for h in t["hucreler"] if h["metin"].strip()][:3]
+        denemeler = ([[_bitis(t["baslik"]), *hucreler[:1]]] if t["baslik"] else []) + [hucreler[:2]]
+        for ipucu in denemeler:
+            u = next(
+                (
+                    u
+                    for u in adaylar
+                    if u["paragraf_id"] not in kullanilan
+                    and ipucu
+                    and all(i in _bitis(u["metin"]) for i in ipucu)
+                ),
+                None,
+            )
+            if u is not None:
                 t["paragraf_id"] = u["paragraf_id"]
+                kullanilan.add(u["paragraf_id"])
                 break
 
 
@@ -77,18 +92,14 @@ def _docling_tablolari_ve_resimleri(pdf: Path, rapor_id: str):  # pragma: no cov
         h = doc.pages[pr.page_no].size.height
         bbox = list(pr.bbox.to_top_left_origin(h).as_tuple())
         if isinstance(item, TableItem):
-            sira[pr.page_no] += 1
-            tablolar.append(
-                tb.docling_tablosu(
-                    item.data.model_dump(),
-                    rapor_id,
-                    sayfa=pr.page_no,
-                    sira=sira[pr.page_no],
-                    bbox=bbox,
-                    baslik=item.caption_text(doc),
-                    sayfa_yuksekligi=h,
-                )  # fmt: skip
-            )
+            t = tb.docling_tablosu(
+                item.data.model_dump(), rapor_id, sayfa=pr.page_no, sira=sira[pr.page_no] + 1, bbox=bbox,
+                baslik=item.caption_text(doc), sayfa_yuksekligi=h,
+            )  # fmt: skip
+            if t is None:
+                continue
+            sira[pr.page_no] += 1  # boş tablo sırayı tüketmez
+            tablolar.append(t)
         elif isinstance(item, PictureItem):
             sinif = None
             meta = getattr(item, "meta", None)
@@ -177,7 +188,15 @@ def yaz(sonuc: dict, out_dir: Path) -> dict[str, Path]:
     return yollar
 
 
+def _utf8_cikti() -> None:
+    """Windows'ta yönlendirilen çıktı cp1254 olabilir; '→', '₂' yazarken çökmesin (inceleme bulgu 15)."""
+    for akim in (sys.stdout, sys.stderr):
+        if hasattr(akim, "reconfigure"):
+            akim.reconfigure(encoding="utf-8", errors="replace")
+
+
 def main(argv: list[str]) -> int:
+    _utf8_cikti()
     ap = argparse.ArgumentParser(description=__doc__.split("\n")[0])
     ap.add_argument("pdf", type=Path)
     ap.add_argument("--rapor-id", required=True)

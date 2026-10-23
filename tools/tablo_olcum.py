@@ -10,11 +10,12 @@
 2. **GriTS** (Smock, Pesala, Abraham 2023, "GriTS: Grid table similarity metric for table structure
    recognition", ICDAR; arXiv:2203.12555): iki ızgaranın en benzer alt yapıları (2D-MSS) "factored" çok
    terimli sezgisel ile hizalanır; F = 2·Σbenzerlik / (|A| + |B|). İki çeşit:
-   - `GriTS_Con`: konum başına hücre metni; benzerlik en uzun ortak alt dizi (LCS) oranı;
+   - `GriTS_Con`: konum başına hücre metni; benzerlik difflib eşleşen blok oranı (başvuru koduyla aynı);
    - `GriTS_Top`: konum başına göreli kapsam kutusu [θ−j, p−i, θ−j+β, p−i+α]; benzerlik IoU.
    Bu dosyadaki uygulama makaledeki tanımdan bağımsız yazıldı; Microsoft table-transformer
    `src/grits.py` (MIT) ile rastgele ızgaralarda karşılaştırıldı (PROGRESS §4, S28).
-3. **Olgu:** (değer, birim, dönem, son satır başlığı) anahtarıyla çoklu küme eşleşmesi → P, R, F1. Taslaktaki
+3. **Olgu:** eşlenen tablo çiftleri içinde (değer, birim, dönem, son satır başlığı) anahtarıyla çoklu küme
+   eşleşmesi → P, R, F1; ayrıca yalnız değer. Taslaktaki
    sayıyı doğrulamak için gereken düzey budur (ADR-004): yapı doğru ama olgu yanlışsa doğrulama yanılır.
 
 Ölçüm sonucu yalnızca bir `run_id` ile raporlanır (AGENTS §3). Yalnızca standart kütüphane.
@@ -29,6 +30,7 @@ import re
 import sys
 from collections import Counter
 from difflib import SequenceMatcher
+from functools import lru_cache
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
@@ -80,24 +82,28 @@ def _hizala_dis(n_a: int, n_b: int, satir_odulu) -> list[tuple[int, int]]:
 
 
 def factored_2dmss(a: list[list], b: list[list], benzerlik) -> tuple[float, float, float]:
-    """(F, P, R). `a` gerçek, `b` tahmin ızgarası; satırlar ve sütunlar ayrı ayrı hizalanır."""
+    """(F, P, R). `a` gerçek, `b` tahmin ızgarası; satırlar ve sütunlar ayrı ayrı hizalanır.
+
+    Ödüller konum dörtlüsü yerine hücre değeri çiftine göre önbelleğe alınır: bellek O(farklı değer çifti),
+    büyük tabloda boş hücreler tekrar ettiği için çok daha az (inceleme bulgu 9). Zaman O(n²m²) kalır.
+    """
     if not a or not b or not a[0] or not b[0]:
         return 0.0, 0.0, 0.0
     na, ma, nb, mb = len(a), len(a[0]), len(b), len(b[0])
-    odul = {
-        (i, j, k, m): benzerlik(a[i][j], b[k][m])
-        for i in range(na)
-        for j in range(ma)
-        for k in range(nb)
-        for m in range(mb)
-    }
+
+    def kalici(v):
+        return tuple(v) if isinstance(v, list) else v
+
+    A = [[kalici(v) for v in row] for row in a]
+    B = [[kalici(v) for v in row] for row in b]
+    od = lru_cache(maxsize=None)(benzerlik)
     satirlar = _hizala_dis(
-        na, nb, lambda i, k: _hizala_1d(range(ma), range(mb), lambda j, m: odul[i, j, k, m])
+        na, nb, lambda i, k: _hizala_1d(range(ma), range(mb), lambda j, m: od(A[i][j], B[k][m]))
     )
     sutunlar = _hizala_dis(
-        ma, mb, lambda j, m: _hizala_1d(range(na), range(nb), lambda i, k: odul[i, j, k, m])
+        ma, mb, lambda j, m: _hizala_1d(range(na), range(nb), lambda i, k: od(A[i][j], B[k][m]))
     )
-    toplam = sum(odul[i, j, k, m] for i, k in satirlar for j, m in sutunlar)
+    toplam = sum(od(A[i][j], B[k][m]) for i, k in satirlar for j, m in sutunlar)
     p, r = toplam / (nb * mb), toplam / (na * ma)
     return (2 * p * r / (p + r) if p + r else 0.0), p, r
 
@@ -105,7 +111,8 @@ def factored_2dmss(a: list[list], b: list[list], benzerlik) -> tuple[float, floa
 def lcs_benzerligi(x: str, y: str) -> float:
     if not x and not y:
         return 1.0
-    lcs = sum(blok.size for blok in SequenceMatcher(None, x, y, autojunk=False).get_matching_blocks())
+    # Başvuru uygulamasıyla aynı: difflib eşleşen blokları (Ratcliff/Obershelp; tam LCS değil), autojunk açık
+    lcs = sum(blok.size for blok in SequenceMatcher(None, x, y).get_matching_blocks())
     return 2 * lcs / (len(x) + len(y))
 
 
@@ -194,17 +201,21 @@ def _norm(s: str) -> str:
     return re.sub(r"[^\w%]+", " ", s).strip()
 
 
-def olgu_anahtari(o: dict) -> tuple:
-    deger = None if o["deger"] is None else float(f"{o['deger']:.6g}")
+def olgu_anahtari(o: dict, tablo: str) -> tuple:
+    """(eşlenmiş tablo, değer, birim, dönem, son satır başlığı). Hücre sayfası anahtara girmez: altın küme
+    birleşik tabloyu tek sayfaya yazar (inceleme bulgu 10)."""
+    deger = None if o["deger"] is None else float(f"{o['deger']:.9g}")
     son = _norm(o["satir_yolu"][-1]) if o["satir_yolu"] else ""
-    return (o["sayfa"], deger, o["birim"], o["donem"], son)
+    return (tablo, deger, o["birim"], o["donem"], son)
 
 
-def olgu_prf(gercek: list[dict], tahmin: list[dict]) -> dict:
-    g, t = Counter(map(olgu_anahtari, gercek)), Counter(map(olgu_anahtari, tahmin))
+def olgu_prf(gercek: list[dict], tahmin: list[dict], esleme: dict[str, str]) -> dict:
+    """`esleme`: tahmin tablo_id → gerçek tablo_id (tespit eşlemesi). Eşlenmeyen tablonun olguları eşleşmez."""
+    g = Counter(olgu_anahtari(o, o["tablo_id"]) for o in gercek)
+    t = Counter(olgu_anahtari(o, esleme.get(o["tablo_id"], "tahmin:" + o["tablo_id"])) for o in tahmin)
     sonuc = _prf(sum((g & t).values()), sum(t.values()), sum(g.values()))
-    deger_g = Counter((o["sayfa"], olgu_anahtari(o)[1]) for o in gercek)
-    deger_t = Counter((o["sayfa"], olgu_anahtari(o)[1]) for o in tahmin)
+    deger_g = Counter(k[:2] for k in g.elements())
+    deger_t = Counter(k[:2] for k in t.elements())
     sonuc["yalniz_deger"] = _prf(
         sum((deger_g & deger_t).values()), sum(deger_t.values()), sum(deger_g.values())
     )
@@ -231,7 +242,7 @@ def olc(gercek: list[dict], tahmin: list[dict], gercek_olgu=None, tahmin_olgu=No
         ],
     }
     if gercek_olgu is not None and tahmin_olgu is not None:
-        out["olgu"] = olgu_prf(gercek_olgu, tahmin_olgu)
+        out["olgu"] = olgu_prf(gercek_olgu, tahmin_olgu, {t["tablo_id"]: g["tablo_id"] for g, t in ciftler})
     return out
 
 

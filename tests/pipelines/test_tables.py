@@ -462,3 +462,154 @@ def test_r_tab_01_yalniz_rakam_blok_tablo_basligi_sayilmaz(tmp_path):
             _kutu(page, 50 + c * 120, 110 + r * 20, 170 + c * 120, 130 + r * 20, m)
     doc.save(tmp_path / "b.pdf")
     assert tb.cikar(tmp_path / "b.pdf", "x-2025")[0]["baslik"] == ""
+
+
+def test_r_tab_01_docling_bos_tablo_kayit_olmaz():
+    """Regresyon (2026-10-23, Derimod 2025 s. 27 ve bir sayfa daha, Docling): 0×0 tablo şema hatası veriyordu."""
+    veri = {"num_rows": 0, "num_cols": 0, "table_cells": []}
+    assert (
+        tb.docling_tablosu(
+            veri, "x-2025", sayfa=27, sira=1, bbox=[0, 0, 10, 10], baslik="", sayfa_yuksekligi=842
+        )
+        is None
+    )
+
+
+# ---------- code-reviewer bulguları (2026-10-23, S28 incelemesi) ----------
+
+
+def test_r_tab_02_bulgu2_kimlik_sayisi_basligi_guvenilmez_yapmaz():
+    """KRİTİK: 'Kapsam 1 (tCO2e)' başlığındaki '1' başlığı güvenilmez sayıyor, birim tablo başlığından
+    (MWh → kWh × 1000) alınıyordu: 12.450 tCO2e yerine 12.450.000 kWh."""
+    t = _elle_tablo(
+        1, [["Tesis", "Kapsam 1 (tCO2e)"], ["Manisa", "12.450"]], baslik="Tablo 5: Enerji (MWh) ve emisyonlar"
+    )
+    tb.denetle(t, sayfa_sayisi=60)
+    o = tb.olgular(t)[0]
+    assert (o["deger"], o["birim"], o["carpan"], o["birim_kaynagi"]) == (12450, "tCO2e", 1.0, "sutun_basligi")
+    assert "baslikta_sayisal_veri" not in t["uyarilar"]
+
+
+def test_r_tab_02_bulgu2_tarihli_baslik_guvenilmez_sayilmaz():
+    t = _elle_tablo(1, [["Kalem", "31.12.2024 itibarıyla (Bin TL)"], ["Yatırım", "1.250"]])
+    tb.denetle(t, sayfa_sayisi=60)
+    o = tb.olgular(t)[0]
+    assert (o["deger"], o["birim"], o["donem"]) == (1_250_000, "TL", "2024")
+    assert "baslikta_sayisal_veri" not in t["uyarilar"]
+
+
+def test_r_tab_02_bulgu2_guvenilmez_baslikta_birim_belirsiz_kalir_sig_kaynaga_dusmez():
+    t = _elle_tablo(1, [["Kalem", "Emisyon 1.514,11 (tCO2e)"], ["Yatırım", "1.250"]], baslik="Tablo 2 (MWh)")
+    o = tb.olgular(t)[0]
+    assert o["birim"] is None and o["birim_kaynagi"] is None
+
+
+def test_r_tab_02_bulgu3_bos_degerli_veri_satiri_bolum_sayilmaz():
+    t = _elle_tablo(
+        1,
+        [
+            ["Gösterge", "2024", "2025"],
+            ["Elektrik (MWh)", "100", "120"],
+            ["Su (m³)", "", ""],
+            ["Doğal gaz", "50", "60"],
+        ],
+    )
+    tb.basliklari_belirle(t)
+    ozet = {o["satir_yolu"][-1]: o for o in tb.olgular(t)}
+    assert ozet["Doğal gaz"]["satir_yolu"] == ["Doğal gaz"]
+    assert ozet["Doğal gaz"]["birim"] is None
+
+
+def test_r_tab_02_bulgu3_bolumden_birim_alinmaz():
+    t = _elle_tablo(
+        1, [["Gösterge", "2025"], ["Kapsam 1 emisyonları", ""], ["Doğal gaz (tCO2e)", "120"], ["Dizel", "40"]]
+    )
+    tb.basliklari_belirle(t)
+    ozet = {o["satir_yolu"][-1]: o for o in tb.olgular(t)}
+    assert ozet["Dizel"]["satir_yolu"] == ["Kapsam 1 emisyonları", "Dizel"]
+    assert ozet["Doğal gaz (tCO2e)"]["birim"] == "tCO2e"
+
+
+def test_r_tab_03_bulgu4_baslik_siniri_asan_hucre_birlestirmeyi_engeller():
+    a = _elle_tablo(1, [["Kapsam", "2024"], ["Kapsam", "x"], ["K1", "12"]], alt=800)
+    a["hucreler"] = [h for h in a["hucreler"] if not (h["satir"] == 1 and h["sutun"] == 0)]
+    a["hucreler"][0]["satir_kapsam"] = 2
+    a["hucreler"][1]["sutun_basligi"] = True
+    for h in a["hucreler"]:
+        h["sutun_basligi"] = h["satir"] < 2
+    b = _elle_tablo(2, [["Kapsam", "2024"], ["Kapsam", "y*"], ["K2", "13"]], ust=50)
+    b["hucreler"] = [h for h in b["hucreler"] if not (h["satir"] == 1 and h["sutun"] == 0)]
+    b["hucreler"][0]["satir_kapsam"] = 2
+    for h in b["hucreler"]:
+        h["sutun_basligi"] = h["satir"] < 2
+    assert tk.tablo_hatalari(a) == [] and tk.tablo_hatalari(b) == []
+    sonuc = tb.sayfalari_birlestir([a, b], {1: 842.0, 2: 842.0})
+    assert all(tk.tablo_hatalari(t) == [] for t in sonuc)
+
+
+def test_r_tab_03_bulgu4_devamin_govdesi_baslik_olmaz():
+    a = _elle_tablo(1, [["Gösterge", "Değer (MWh)"], ["Elektrik", "1.200"]], alt=800)
+    b = _elle_tablo(2, [["Buhar", "-"], ["Toplam", "1.650"]], ust=50)
+    b["hucreler"][0]["sutun_basligi"] = b["hucreler"][1]["sutun_basligi"] = True  # devamın sezgisi yanılmış
+    t = tb.sayfalari_birlestir([a, b], {1: 842.0, 2: 842.0})[0]
+    buhar = next(h for h in t["hucreler"] if h["metin"] == "Buhar")
+    assert not buhar["sutun_basligi"]
+    assert any(o["eksik"] and o["satir_yolu"] == ["Buhar"] for o in tb.olgular(t))
+
+
+def test_r_tab_01_bulgu4_izgara_boslugu_olguda_sessiz_kalmaz():
+    t = _elle_tablo(1, [["A", "B"], ["x", "1"]])
+    t["hucreler"].pop()
+    with pytest.raises(ValueError):
+        tb.olgular(t)
+
+
+@pytest.mark.parametrize("motorlar", [("pymupdf-bosluk",)])
+def test_r_tab_01_bulgu5_saga_hizali_ve_sol_ustu_bos_kenarliksiz(tmp_path, motorlar):
+    doc = pymupdf.open()
+    page = doc.new_page(width=595, height=842)
+    _yaz(page, 50, 120, "Tablo 3: Enerji tüketimi (MWh)", 10)
+    sag = {1: 260, 2: 360}  # sağa hizalı sayı sütunlarının sağ kenarı
+    satirlar = [
+        ["", "2024", "2025"],
+        ["Elektrik tüketimi", "12.450.000", "11.900.500"],
+        ["Doğal gaz", "8.300", "8.120"],
+    ]
+    for i, satir in enumerate(satirlar):
+        for j, metin in enumerate(satir):
+            if not metin:
+                continue
+            x = 50 if j == 0 else sag[j] - pymupdf.get_text_length(metin, fontsize=9, fontname="helv") * 1.05
+            _yaz(page, x, 150 + i * 18, metin)
+    _yaz(
+        page, 50, 260, "Enerji tüketimi bir önceki yıla göre azalmış ve hedeflerle uyumlu gerçekleşmiştir.", 9
+    )
+    doc.save(tmp_path / "sag.pdf")
+    tablolar = tb.cikar(tmp_path / "sag.pdf", "x-2025", motorlar)
+    assert len(tablolar) == 1
+    t = tablolar[0]
+    assert tk.tablo_hatalari(t) == []
+    assert _metin_izgarasi(t) == [
+        ["", "2024", "2025"],
+        ["Elektrik tüketimi", "12.450.000", "11.900.500"],
+        ["Doğal gaz", "8.300", "8.120"],
+    ]
+
+
+def test_r_tab_01_bulgu6_basligi_olan_sayim_tablosu_icindekiler_sayilmaz():
+    t = _elle_tablo(1, [["Bölge", "Tesis sayısı"], ["Marmara", "3"], ["Ege", "5"], ["Akdeniz", "8"], ["İç Anadolu", "12"]],
+                    baslik="Tablo 7: Bölgelere göre tesis sayısı")  # fmt: skip
+    tb.denetle(t, sayfa_sayisi=120)
+    assert "icindekiler_olasi" not in t["uyarilar"]
+    assert len(tb.olgular(t)) == 4
+
+
+def test_r_tab_03_uc_sayfalik_zincir_tek_tabloya_birlesir():
+    """Regresyon (2026-10-23, kopya üzerinde birleştirmeden sonra Klimasan Tablo 1–4 zincirleri ikişer kaldı)."""
+    a = _elle_tablo(1, [["Risk", "Etki"], ["R1", "Yüksek"]], alt=800)
+    b = _elle_tablo(2, [["Risk", "Etki"], ["R2", "Orta"]], ust=40)
+    b["parcalar"][0]["bbox"][3] = b["hucreler"][-1]["bbox"][3] = 810  # sayfanın altına kadar sürer
+    c = _elle_tablo(3, [["Risk", "Etki"], ["R3", "Düşük"]], ust=40)
+    t = tb.sayfalari_birlestir([a, b, c], {1: 842.0, 2: 842.0, 3: 842.0})
+    assert len(t) == 1 and t[0]["sayfalar"] == [1, 2, 3]
+    assert _metin_izgarasi(t[0]) == [["Risk", "Etki"], ["R1", "Yüksek"], ["R2", "Orta"], ["R3", "Düşük"]]

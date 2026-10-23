@@ -163,6 +163,8 @@ def olgu_hatalari(o: object, tablolar: dict[str, dict]) -> list[str]:
         h.append(f"{o['olgu_id']}: hücre sayısal değil")
     elif hd.eksik != o["eksik"]:
         h.append(f"{o['olgu_id']}: eksik işareti hücreyle uyuşmuyor")
+    elif not hd.eksik and not isinstance(o["deger"], (int, float)):
+        h.append(f"{o['olgu_id']}: değer sayı olmalı (eksik değilse)")
     elif not hd.eksik:
         beklenen = hd.deger * (o["carpan"] if hd.birim is None else 1.0)
         if abs(beklenen - o["deger"]) > 1e-9 * max(1.0, abs(beklenen)):

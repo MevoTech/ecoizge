@@ -96,34 +96,36 @@ def cubuk_verisi(
         for hd in [hucre_degeri(m["metin"])]
         if hd is not None and not hd.eksik and not hd.yil  # yıl etiketi eksen/kategori yazısıdır, değer değil
     ]
-    kullanilan: set[int] = set()
-    veri: list[tuple[float, dict]] = []
-    eslesmeyen = 0
-    for m, hd in adaylar:
+    # Bütün (etiket, çubuk) adayları maliyetle sıralanıp bire bir atanır (açgözlü ama küresel; inceleme bulgu 12).
+    # Hizalama eşiği çubuğun yarı kalınlığı + 1 pt: dar bitişik çubukta etiket komşuya kaymaz.
+    ciftler: list[tuple[float, float, int, int]] = []
+    for mi, (m, _) in enumerate(adaylar):
         mx, my = _merkez(m["bbox"])
-        en_iyi, mesafe = None, float("inf")
         for i, c in enumerate(cubuklar):
-            if i in kullanilan:
-                continue
             b = c["bbox"]
             cx, cy = _merkez(b)
             if dikey:
-                hizali = abs(mx - cx) <= max((b[2] - b[0]) / 2, 6)
+                kayma = abs(mx - cx)
+                hizali = kayma <= max((b[2] - b[0]) / 2 + 1, 2)
                 d = b[1] - m["bbox"][3]  # etiket çubuğun üstünde
-                icinde = b[1] <= my <= b[3]
             else:
-                hizali = abs(my - cy) <= max((b[3] - b[1]) / 2, 6)
+                kayma = abs(my - cy)
+                hizali = kayma <= max((b[3] - b[1]) / 2 + 1, 2)
                 d = m["bbox"][0] - b[2]  # etiket çubuğun sağında
-                icinde = b[0] <= mx <= b[2]
+            icinde = b[0] <= mx <= b[2] and b[1] <= my <= b[3]
             if hizali and (icinde or -2 <= d <= ETIKET_ARALIGI):
-                d = 0 if icinde else abs(d)
-                if d < mesafe:
-                    en_iyi, mesafe = i, d
-        if en_iyi is None:
-            eslesmeyen += 1
-            continue
-        kullanilan.add(en_iyi)
-        c = cubuklar[en_iyi]
+                ciftler.append((0.0 if icinde else abs(d), kayma, mi, i))
+    atanan: dict[int, int] = {}
+    dolu: set[int] = set()
+    for _, _, mi, i in sorted(ciftler):
+        if mi not in atanan and i not in dolu:
+            atanan[mi] = i
+            dolu.add(i)
+    eslesmeyen = len(adaylar) - len(atanan)
+    veri: list[tuple[float, dict]] = []
+    for mi, i in atanan.items():
+        m, hd = adaylar[mi]
+        c = cubuklar[i]
         veri.append(
             (
                 _merkez(c["bbox"])[0] if dikey else _merkez(c["bbox"])[1],
@@ -199,16 +201,22 @@ def cubuk_gruplari(dikdortgenler: list[dict]) -> list[tuple[list[dict], bool]]:
     çubuk genişliğinin 6 katını (en az 100 pt) aşınca ayrılır. Bütün boyları eşit grup çubuk grafik sayılmaz
     (tablo başlık dolguları). Dönüş: [(çubuklar, dikey_mi)].
     """
-    kalan = [d for d in dikdortgenler if not _lejant_karesi(d["bbox"])]
+    # Lejant kareleri önceden atılmaz: küçük değerli bir çubuk da kare olabilir (inceleme bulgu 13). Lejant
+    # kareleri ortak tabanı paylaşırsa eşit boyda olduklarından aşağıdaki eşit boy kuralıyla elenir.
+    kalan = list(dikdortgenler)
     out: list[tuple[list[dict], bool]] = []
     while True:
         adaylar: list[tuple[list[dict], bool]] = []
         for dikey in (True, False):
-            anahtar: dict[int, list[dict]] = {}
-            for d in kalan:
+            sirali = sorted(kalan, key=lambda d: d["bbox"][3] if dikey else d["bbox"][0])
+            grup: list[dict] = []
+            for d in sirali:  # taban kümesi: ilk öğeye en çok 1,5 pt (yuvarlama sınırında bölünmez)
                 k = d["bbox"][3] if dikey else d["bbox"][0]
-                anahtar.setdefault(round(k / 1.5), []).append(d)
-            adaylar += [(g, dikey) for g in anahtar.values() if len(g) >= 2]
+                if grup and k - (grup[0]["bbox"][3] if dikey else grup[0]["bbox"][0]) > 1.5:
+                    adaylar += [(grup, dikey)] if len(grup) >= 2 else []
+                    grup = []
+                grup.append(d)
+            adaylar += [(grup, dikey)] if len(grup) >= 2 else []
         if not adaylar:
             return out
         grup, dikey = max(adaylar, key=lambda x: len(x[0]))
@@ -222,7 +230,8 @@ def cubuk_gruplari(dikdortgenler: list[dict]) -> list[tuple[list[dict], bool]]:
         parca = [grup[0]]
         for d in grup[1:]:
             if d["bbox"][eksen] - parca[-1]["bbox"][eksen + 2] > max(100.0, 6 * kalinlik):
-                out.append((parca, dikey)) if len(parca) >= 2 else None
+                if len(parca) >= 2:
+                    out.append((parca, dikey))
                 parca = []
             parca.append(d)
         if len(parca) >= 2:
@@ -276,7 +285,10 @@ def sayfa_sekilleri(
         genis = [cekirdek[0] - (KATEGORI_PAYI if not dikey else KUME_TOL), cekirdek[1] - KUME_TOL,
                  cekirdek[2] + KUME_TOL, cekirdek[3] + (KATEGORI_PAYI if dikey else KUME_TOL)]  # fmt: skip
         icerik = [s for s in satirlar if _icinde(s["bbox"], genis)]
-        kareler = [c for c in cizimler if _lejant_karesi(c["bbox"]) and _icinde(c["bbox"], genis)]
+        kareler = [
+            c for c in cizimler
+            if _lejant_karesi(c["bbox"]) and _icinde(c["bbox"], genis) and not any(c is x for x in cubuklar)
+        ]  # fmt: skip
         lejant, lejant_metni = _lejant(kareler, icerik)
         baslik = _baslik(satirlar, cekirdek)
         metinler = [s for s in icerik if s not in lejant_metni and s["metin"] != baslik]

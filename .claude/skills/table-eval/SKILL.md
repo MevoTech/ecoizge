@@ -10,8 +10,8 @@ Tablo çıkarımının doğruluğu üç düzeyde ölçülür; biri iyi diğeri k
 | Düzey | Ölçüt | Neyi yakalar |
 |---|---|---|
 | Tespit | P/R/F1 (aynı sayfa, IoU ≥ 0,5; altında kutu yoksa GriTS_Con ≥ 0,5) | Kaçırılan ya da uydurulan tablo |
-| Yapı | GriTS_Con (hücre metni, LCS), GriTS_Top (birleşik hücre topolojisi, IoU) | Kayan sütun, yutulan satır, bölünen/birleşen hücre |
-| Olgu | P/R/F1, anahtar (sayfa, değer, birim, dönem, son satır başlığı); ayrıca yalnız değer | Taslak sayısını doğrulamaya yetecek doğrulukta mı |
+| Yapı | GriTS_Con (hücre metni, difflib eşleşen blok oranı; başvuru uygulamasıyla aynı), GriTS_Top (birleşik hücre topolojisi, IoU) | Kayan sütun, yutulan satır, bölünen/birleşen hücre |
+| Olgu | P/R/F1; eşlenen tablo çifti içinde anahtar (değer, birim, dönem, son satır başlığı), hücre sayfası anahtarda değil; ayrıca yalnız değer | Taslak sayısını doğrulamaya yetecek doğrulukta mı |
 
 GriTS: Smock, Pesala, Abraham (2023), ICDAR, arXiv:2203.12555. `tools/tablo_olcum.py` tanımdan bağımsız yazıldı ve Microsoft table-transformer `src/grits.py` (MIT) ile 300 rastgele ızgara çiftinde karşılaştırıldı: en büyük fark 0 (PROGRESS §4). TEDS (Zhong vd. 2020, PubTabNet; arXiv:1911.10683) ağaç düzenleme uzaklığına dayanır, HTML gerektirir ve `apted` bağımlılığı ister; şimdilik kullanılmaz.
 
@@ -49,6 +49,8 @@ GriTS: Smock, Pesala, Abraham (2023), ICDAR, arXiv:2203.12555. `tools/tablo_olcu
 - **Taslaktan altın:** Motor çıktısını düzelterek altın hazırlamak o motoru kayırır; elle yazılır ya da üçüncü bir araçtan (Excel "PDF'ten veri al") alınıp hücre hücre kontrol edilir; kaynak `uyarilar`'a yazılır.
 - **GriTS_Con yüksek ama olgu düşük** olabilir: metin doğru, başlık rolü yanlış (dönem/birim kayar). Bu yüzden üç düzey birlikte raporlanır.
 - **Olgu ölçümü türetme mantığını kendisiyle karşılaştırır:** altın olgular da `pipelines/tables.py` içindeki `olgular` ile türetilir; bu yüzden altın olguların birim ve dönemi insan tarafından kontrol edilmeden ölçüm yapılmaz (Adımlar 1).
+- **Olgu türetme sezgisi ortak** (KL-15 a): altın olgular da aynı `olgular` fonksiyonuyla türetilir; insan kontrolü yapılmadan olgu F1 sezgi hatalarını göstermez.
+- **Büyük tablo:** GriTS O(n²m²); 120×10 tablo ~13 sn (KL-15 e).
 - **Eşlenmeyen gerçek tablo:** `grits_*_tum_gercek_ort` onu 0 sayar; `*_eslenen_ort` saymaz. İkisi birlikte yazılır.
 - **Sayfa numarası:** altın kümede sayfa PDF sayfasıdır (raporun basılı numarası değil; Akbank'ta bir PDF sayfası iki basılı sayfa).
 

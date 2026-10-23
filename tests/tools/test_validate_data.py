@@ -248,3 +248,9 @@ def test_r_tab_04_sekil_dosyasi_veri_durumu_tutarli(tmp_path):
     }  # fmt: skip
     errs = validate_file(_yaz_jsonl(tmp_path / "x.figures.jsonl", [s]))
     assert any("vektor_etiket" in e for e in errs)
+
+
+def test_r_tab_02_bulgu_olgu_deger_null_eksik_false_cokmez(tmp_path):
+    _yaz_jsonl(tmp_path / "x.tables.jsonl", [_yapi_tablosu()])
+    errs = validate_file(_yaz_jsonl(tmp_path / "x.facts.jsonl", [_yapi_olgusu(deger=None)]))
+    assert any("değer" in e for e in errs)

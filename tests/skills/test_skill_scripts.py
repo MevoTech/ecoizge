@@ -595,3 +595,37 @@ def test_table_eval_altin_donustur_birlesik_hucre_ve_olgu(tmp_path, capsys):
     assert len((out / "k-2025.tables.jsonl").read_text(encoding="utf-8").splitlines()) == 1
     csv_yolu.write_text("A;B\n<;x\n", encoding="utf-8")
     assert dn.main(argv) == 1 and "ilk sütunda" in capsys.readouterr().err
+
+
+def test_table_eval_bulgu11_ondalik_virgullu_csv_ayraci(tmp_path):
+    dn = load("table-eval", "altin_donustur")
+    yol = tmp_path / "t.csv"
+    yol.write_text("Gösterge;Değer\nIsıtma, soğutma;12,5\nAydınlatma, diğer;3,4\n", encoding="utf-8")
+    assert dn.csv_oku(yol) == [
+        ["Gösterge", "Değer"],
+        ["Isıtma, soğutma", "12,5"],
+        ["Aydınlatma, diğer", "3,4"],
+    ]
+
+
+def test_table_eval_bulgu11_excel_cp1254_csv(tmp_path):
+    dn = load("table-eval", "altin_donustur")
+    yol = tmp_path / "t.csv"
+    yol.write_bytes("Gösterge;Değer\nIşık;12,5\n".encode("cp1254"))
+    assert dn.csv_oku(yol)[1] == ["Işık", "12,5"]
+
+
+def test_table_extract_bulgu15_stdout_cp1254(tmp_path):
+    """Windows'ta yönlendirilen çıktı cp1254 olabilir; '→' ve '₂' yazılırken çökmemeli."""
+    import io
+    import sys
+
+    oz = load("table-extract", "tablo_ozeti")
+    t = _tablo_kaydi() | {"baslik": "Tablo 1: CO₂ → emisyon"}
+    (tmp_path / "tables.jsonl").write_text(json.dumps(t, ensure_ascii=False) + "\n", encoding="utf-8")
+    eski = sys.stdout
+    sys.stdout = io.TextIOWrapper(io.BytesIO(), encoding="cp1254")
+    try:
+        assert oz.main([str(tmp_path)]) == 0
+    finally:
+        sys.stdout = eski

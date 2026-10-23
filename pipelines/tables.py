@@ -33,9 +33,12 @@ for _yol in (_KOK / "tools", _KOK / "services" / "report-service", _KOK / "pipel
 from extract import BAND, join_lines  # noqa: E402
 from tablo_kurallari import OLGU_SURUMU, TABLO_SURUMU, YIL, izgara  # noqa: E402
 
+from report_service.generation.placeholders import IDENTIFIER  # noqa: E402
 from report_service.verify.numbers import birim_bul, birimler_bul, extract_numbers, hucre_degeri  # noqa: E402
 
 BASLIK_RE = re.compile(r"^\s*(Tablo|Table)\s*\d+", re.IGNORECASE)
+ICINDEKILER_RE = re.compile(r"[İi]çindekiler|İÇİNDEKİLER|contents|sayfa", re.IGNORECASE)
+TARIH_RE = re.compile(r"(?<!\d)\d{1,2}[./]\d{1,2}[./]((?:19|20)\d{2})(?!\d)")
 DIPNOT_RE = re.compile(r"^\s*(\*+|[¹²³⁴⁵⁶⁷⁸⁹]|\(\d{1,2}\)|\d{1,2}\)|Not\s*:|Kaynak\s*:|Açıklama\s*:)")
 BASLIK_ARALIGI = 30.0  # tablo başlığı tablonun en çok bu kadar üstünde (pt)
 DIPNOT_ARALIGI = 25.0
@@ -101,6 +104,14 @@ def _bosluklari_doldur(hucreler: list[dict], n: int, m: int, sayfa: int) -> list
 # ---------- başlık rolleri ----------
 
 
+def _tam_izgara(t: dict) -> list[list[int]]:
+    """Izgara; kaplanmayan konum varsa ValueError (sessizce son hücreyi okumamak için, inceleme bulgu 4)."""
+    g = izgara(t)
+    if any(-1 in row for row in g):
+        raise ValueError(f"{t['tablo_id']}: ızgarada kaplanmayan konum var")
+    return g
+
+
 def _sayisal(metin: str) -> bool:
     """Veri hücresi gibi sayısal mı (yıl ve eksik değer işaretleri başlıkta da görülür, sayılmaz)."""
     h = hucre_degeri(metin)
@@ -113,9 +124,10 @@ def basliklari_belirle(t: dict) -> dict:
     - Sütun başlığı: baştaki, hiç sayısal veri hücresi olmayan satırlar (en çok 3). Tabloda hiç sayısal
       hücre yoksa yalnızca ilk satır.
     - Satır başlığı: ilk sayısal sütunun solunda kalan ve gövdede hiç sayısal olmayan sütunlar.
-    - Bölüm satırı: gövdede tek dolu hücresi olan ve o hücre satır başlığı sütununda olan satır.
+    - Bölüm satırı: gövdede tek dolu hücresi olan, o hücre satır başlığı sütununda olan ve birim anmayan satır.
+      (Değerleri boş bir veri satırı da bu tanıma uyabilir; biçim bilgisi olmadan ayırt edilemez, KL-13.)
     """
-    g = izgara(t)
+    g = _tam_izgara(t)
     n, m = t["satir_sayisi"], t["sutun_sayisi"]
     hc = t["hucreler"]
     satir_sayisal = [any(_sayisal(hc[i]["metin"]) for i in set(row)) for row in g]
@@ -138,7 +150,8 @@ def basliklari_belirle(t: dict) -> dict:
                     i = g[r][c]
                     if hc[i]["metin"].strip() and not hc[i]["sutun_basligi"]:
                         hc[i]["satir_basligi"] = True
-                        if len(dolu) == 1:
+                        if len(dolu) == 1 and not birimler_bul(hc[i]["metin"]):
+                            # birimli tek dolu hücre ("Su (m³)") değeri boş bir veri satırıdır, bölüm değil
                             hc[i]["bolum_satiri"] = True
     return t
 
@@ -152,7 +165,7 @@ def denetle(t: dict, sayfa_sayisi: int) -> dict:
     - `baslikta_sayisal_veri`: bir sütun başlığı hücresinde yıl olmayan sayı var; başlık satırı veri satırını
       yutmuş olabilir (Klimasan 2025 s. 51). Bu hücreden birim alınmaz (`_birim`).
     - `icindekiler_olasi`: sayısal hücrelerin hepsi tek sütunda, tam sayı, 1…sayfa sayısı aralığında ve
-      artan; başlıkta yıl ya da birim yok. İçindekiler sayfa numaraları olgu değildir (`olgular` atlar).
+      artan; başlıkta yıl ya da birim yok; "Tablo N" başlığı yok; sütun başlığı yok ya da "İçindekiler". İçindekiler sayfa numaraları olgu değildir (`olgular` atlar).
     """
     hc = t["hucreler"]
     uyari = list(t["uyarilar"])
@@ -179,6 +192,8 @@ def denetle(t: dict, sayfa_sayisi: int) -> dict:
         and sum(a <= b for a, b in zip(degerler, degerler[1:], strict=False)) >= 0.8 * (len(degerler) - 1)
         and not YIL.search(basliklar)
         and not birimler_bul(basliklar)
+        and not BASLIK_RE.match(t["baslik"])  # "Tablo N" başlıklı tablo içindekiler değildir
+        and (not basliklar.strip() or ICINDEKILER_RE.search(basliklar))  # sütun adı varsa veri tablosudur
     ):
         uyari.append("icindekiler_olasi")
     t["uyarilar"] = list(dict.fromkeys(uyari))
@@ -192,7 +207,7 @@ def olgular(t: dict) -> list[dict]:
     """
     if "icindekiler_olasi" in t["uyarilar"]:
         return []
-    g = izgara(t)
+    g = _tam_izgara(t)
     hc = t["hucreler"]
     out: list[dict] = []
     bolum = ""
@@ -223,7 +238,8 @@ def olgular(t: dict) -> list[dict]:
             if hd.yil:  # yıl bir nicelik değildir; başlıktaki birimi almaz
                 birim, carpan, kaynak = None, 1.0, None
             else:
-                birim, carpan, kaynak = _birim(hd.birim, sutun_yolu, satir_yolu, t["birim"])
+                # bölüm adı birim kaynağı değildir (inceleme bulgu 3); yalnız bu satırın başlıkları
+                birim, carpan, kaynak = _birim(hd.birim, sutun_yolu, _tekil(basliklar), t["birim"])
             out.append(
                 {
                     "olgu_id": f"{t['tablo_id']}-r{r:02d}c{c:02d}",
@@ -271,22 +287,28 @@ def _donem(yol: list[str]) -> str | None:
 
 
 def _guvenilir_baslik(parca: str) -> bool:
-    return not any(not q.is_year for q in extract_numbers(parca))
+    """Başlık öğesinde veri sayısı yok mu? Yıl, tarih ("31.12.2024") ve kimlik sayıları ("Kapsam 1",
+    "Kategori 7", "TSRS 2") veri sayılmaz (inceleme bulgu 2)."""
+    temiz = TARIH_RE.sub(lambda m: m.group(1), IDENTIFIER.sub(" ", parca))
+    return not any(not q.is_year for q in extract_numbers(temiz))
 
 
 def _birim(hucre_birimi, sutun_yolu, satir_yolu, tablo_birimi) -> tuple[str | None, float, str | None]:
-    """Öncelik: hücre > sütun başlığı (en derin) > satır başlığı > tablo başlığı. Birden çok farklı birim
-    anan ya da sayısal veri içeren başlık öğesi kullanılmaz (belirsiz)."""
+    """Öncelik: hücre > sütun başlığı (en derin) > satır başlığı > tablo başlığı.
+
+    Birden çok farklı birim anan ya da veri sayısı içeren (güvenilmez) bir başlık öğesine gelinince birim
+    belirsizdir ve aranmaz: daha sığ kaynağa (ör. tablo başlığı) düşmek yanlış birim verir (bulgu 2).
+    """
     if hucre_birimi:
         return hucre_birimi, 1.0, "hucre"
     for kaynak, yol in (("sutun_basligi", sutun_yolu), ("satir_basligi", satir_yolu)):
         for parca in reversed(yol):
             bulunan = set(birimler_bul(parca))
-            if len(bulunan) == 1 and _guvenilir_baslik(parca):
+            if not _guvenilir_baslik(parca) or len(bulunan) > 1:
+                return None, 1.0, None
+            if bulunan:
                 b = bulunan.pop()
                 return b[0], b[1], kaynak
-            if len(bulunan) > 1:
-                return None, 1.0, None
     if tablo_birimi:
         return tablo_birimi["taban"], tablo_birimi["carpan"], "tablo_basligi"
     return None, 1.0, None
@@ -302,9 +324,10 @@ def olgu_metni(o: dict, t: dict) -> str:
 
 
 def _kumele(degerler: Iterable[float], tol: float = KUMELEME_TOL) -> list[float]:
+    """Yakın kenarları tek ızgara çizgisinde toplar; uzaklık grubun ilk değerine göre (zincirlenmez)."""
     gruplar: list[list[float]] = []
     for v in sorted(degerler):
-        if gruplar and v - gruplar[-1][-1] <= tol:
+        if gruplar and v - gruplar[-1][0] <= tol:
             gruplar[-1].append(v)
         else:
             gruplar.append([v])
@@ -321,7 +344,7 @@ def _hucre_metni(page, bbox) -> str:
     return re.sub(r"\s+", " ", page.get_text("text", clip=pymupdf.Rect(bbox))).strip()
 
 
-def _cizgi_izgarasi(page, table, sayfa: int) -> tuple[list[dict], int, int]:
+def _cizgi_izgarasi(page, table, sayfa: int) -> tuple[list[dict], int, int, int]:
     """Hücre dikdörtgenlerinden ızgara: kenarlar kümelenir, her hücre kapladığı aralığa yerleşir."""
     kutular = list(dict.fromkeys(tuple(c) for c in table.cells if c))
     xs = _kumele([k[0] for k in kutular] + [k[2] for k in kutular])
@@ -329,11 +352,13 @@ def _cizgi_izgarasi(page, table, sayfa: int) -> tuple[list[dict], int, int]:
     n, m = len(ys) - 1, len(xs) - 1
     dolu: set[tuple[int, int]] = set()
     hucreler = []
+    atilan = 0
     for k in sorted(kutular, key=lambda k: (k[1], k[0])):
         r0, r1 = _en_yakin(ys, k[1]), _en_yakin(ys, k[3])
         c0, c1 = _en_yakin(xs, k[0]), _en_yakin(xs, k[2])
         konumlar = {(r, c) for r in range(r0, r1) for c in range(c0, c1)}
         if not konumlar or konumlar & dolu:
+            atilan += 1  # çok ince ya da çakışan hücre: uyarı `cizgi_hucre_atildi`
             continue
         dolu |= konumlar
         h = bos_hucre(r0, c0, sayfa, [round(v, 2) for v in k])
@@ -343,7 +368,7 @@ def _cizgi_izgarasi(page, table, sayfa: int) -> tuple[list[dict], int, int]:
         for c in range(m):
             if (r, c) not in dolu:
                 hucreler.append(bos_hucre(r, c, sayfa, [xs[c], ys[r], xs[c + 1], ys[r + 1]]))
-    return hucreler, n, m
+    return hucreler, n, m, atilan
 
 
 def _bloklar(page) -> list[dict]:
@@ -428,33 +453,37 @@ def _kenarliksiz(bloklar: list[dict], baslik_blok: dict, alt_sinir: float, sayfa
         return None
     yukseklik = sorted(s["bbox"][3] - s["bbox"][1] for s in satirlar)[len(satirlar) // 2]
     tol = 0.35 * yukseklik
-    # 1. başlık bandı → sütunlar
+    # Sütunlar: kabul edilen bütün bantların yatay izdüşümündeki dolu aralıklar (boşluk vadileri arası).
+    # Yeni bant var olan iki sütunu birleştirirse (paragraf satırı, sütun aşan metin) tablo orada biter.
+    # Sağa hizalı sayılar ve boş sol üst başlık hücresi böylece doğru sütuna düşer (inceleme bulgu 5).
     j = _bant(satirlar, 0, tol)
-    kesim = _kesimler(satirlar[:j])
-    if len(kesim) < 2:
-        return None
-    sol = [k[0] for k in kesim]
-    sinirlar = [*sol[1:], float("inf")]
-
-    def sutun(s) -> int | None:
-        for c, (x0, x1) in enumerate(zip([-float("inf"), *sol[1:]], sinirlar, strict=True)):
-            if s["bbox"][0] >= x0 - 3 and s["bbox"][2] <= x1 + 3:
-                return c
-        return None  # sütun sınırını kesiyor → tablo satırı değil
-
     bantlar = [satirlar[:j]]
-    son_y = max(s["bbox"][3] for s in satirlar[:j])
+    tum = list(satirlar[:j])
+    kesim = _kesimler(tum)
+    son_y = max(s["bbox"][3] for s in tum)
     while j < len(satirlar):
         k = _bant(satirlar, j, tol)
         bant = satirlar[j:k]
-        if bant[0]["bbox"][1] - son_y > 2.5 * yukseklik or any(sutun(s) is None for s in bant):
+        if bant[0]["bbox"][1] - son_y > 2.5 * yukseklik:
             break
         if any(s["boyut"] > 1.15 * satirlar[0]["boyut"] + 0.5 for s in bant):
             break  # bölüm başlığı
+        yeni = _kesimler(tum + bant)
+        if any(sum(e[0] >= y[0] - 0.01 and e[1] <= y[1] + 0.01 for e in kesim) >= 2 for y in yeni):
+            break
         bantlar.append(bant)
+        tum += bant
+        kesim = yeni
         son_y = max(s["bbox"][3] for s in bant)
         j = k
-    if len(bantlar) < 2 or not any(len({sutun(s) for s in b}) >= 2 for b in bantlar[1:]):
+
+    def sutun(s) -> int | None:
+        for c, (x0, x1) in enumerate(kesim):
+            if s["bbox"][0] >= x0 - 0.5 and s["bbox"][2] <= x1 + 0.5:
+                return c
+        return None
+
+    if len(kesim) < 2 or len(bantlar) < 2 or not any(len({sutun(s) for s in b}) >= 2 for b in bantlar[1:]):
         return None
     hucreler = []
     for r, bant in enumerate(bantlar):
@@ -489,7 +518,7 @@ def sayfa_tablolari(
     alanlar: list[list[float]] = []
     kullanilan: set[int] = set()
     for t in page.find_tables().tables if "pymupdf" in motorlar else []:
-        hucreler, n, m = _cizgi_izgarasi(page, t, sayfa)
+        hucreler, n, m, atilan = _cizgi_izgarasi(page, t, sayfa)
         if n < 1 or m < 1:
             continue
         alan = list(t.bbox)
@@ -497,7 +526,8 @@ def sayfa_tablolari(
         kullanilan |= kul
         alanlar.append(alan)
         adaylar.append((alan, {"hucreler": hucreler, "n": n, "m": m, "motor": "pymupdf",
-                               "baslik": baslik, "dipnot": dipnot, "uyari": []}))  # fmt: skip
+                               "baslik": baslik, "dipnot": dipnot,
+                               "uyari": ["cizgi_hucre_atildi"] if atilan else []}))  # fmt: skip
     basliklar = [
         (i, b)
         for i, b in enumerate(bloklar)
@@ -538,8 +568,13 @@ def sayfalari_birlestir(tablolar: list[dict], sayfa_yukseklikleri: dict[int, flo
     out: list[dict] = []
     for t in sirali:
         onceki = out[-1] if out else None
-        if onceki is not None and _devam_mi(onceki, t, sirali, sayfa_yukseklikleri):
+        birlesik = (
             _ekle(onceki, t)
+            if onceki is not None and _devam_mi(onceki, t, sirali, sayfa_yukseklikleri)
+            else None
+        )
+        if birlesik is not None:
+            out[-1] = birlesik
         else:
             out.append(t)
     return out
@@ -551,9 +586,11 @@ def _devam_mi(a: dict, b: dict, hepsi: list[dict], h: dict[int, float]) -> bool:
         return False
     if b["baslik"] and b["baslik"] != a["baslik"]:
         return False
-    son_a = max((t for t in hepsi if pa in t["sayfalar"]), key=lambda t: t["parcalar"][-1]["bbox"][3])
-    ilk_b = min((t for t in hepsi if t["sayfalar"][0] == pb), key=lambda t: t["parcalar"][0]["bbox"][1])
-    if son_a is not a and son_a["tablo_id"] != a["tablo_id"] or ilk_b is not b:
+    # a'nın son parçası pa sayfasındaki en alt tablo parçası, b'nin ilk parçası pb'deki en üst parça olmalı.
+    # Parçalar üzerinden bakılır: birleştirme kopya ürettiği için nesne kimliği karşılaştırılamaz.
+    alt_pa = max(p["bbox"][3] for t in hepsi for p in t["parcalar"] if p["sayfa"] == pa)
+    ust_pb = min(p["bbox"][1] for t in hepsi for p in t["parcalar"] if p["sayfa"] == pb)
+    if a["parcalar"][-1]["bbox"][3] < alt_pa - 0.5 or b["parcalar"][0]["bbox"][1] > ust_pb + 0.5:
         return False
     if a["parcalar"][-1]["bbox"][3] < BIRLESTIRME_ALT * h.get(pa, 842.0):
         return False
@@ -576,7 +613,10 @@ def _satir_metinleri(t: dict, r: int) -> list[str]:
     return [" ".join(t["hucreler"][i]["metin"].split()) for i in g[r]]
 
 
-def _ekle(a: dict, b: dict) -> None:
+def _ekle(a: dict, b: dict) -> dict | None:
+    """`a`'ya devamı `b`'yi ekler (kopya döner). Tekrarlanan başlık satırları atılır; `b`'den gelen bütün
+    hücreler gövdedir (devamın kendi başlık sezgisi geçersiz). Atılan başlık satırları ile gövde arasında
+    kalan (sınırı aşan) birleşik hücre varsa birleştirme yapılmaz → None (inceleme bulgu 4)."""
     baslik_sayisi = 0
     while (
         baslik_sayisi < min(a["satir_sayisi"], b["satir_sayisi"] - 1)
@@ -584,17 +624,20 @@ def _ekle(a: dict, b: dict) -> None:
         and all(a["hucreler"][i]["sutun_basligi"] for i in izgara(a)[baslik_sayisi])
     ):
         baslik_sayisi += 1
+    if any(h["satir"] < baslik_sayisi < h["satir"] + h["satir_kapsam"] for h in b["hucreler"]):
+        return None
     kaydir = a["satir_sayisi"] - baslik_sayisi
+    yeni = a | {"hucreler": [dict(h) for h in a["hucreler"]]}
     for h in b["hucreler"]:
-        if h["satir"] < baslik_sayisi:
-            continue
-        a["hucreler"].append(h | {"satir": h["satir"] + kaydir})
-    a["satir_sayisi"] += b["satir_sayisi"] - baslik_sayisi
-    a["sayfalar"] = sorted(set(a["sayfalar"]) | set(b["sayfalar"]))
-    a["parcalar"] += b["parcalar"]
-    a["dipnotlar"] += [d for d in b["dipnotlar"] if d not in a["dipnotlar"]]
-    a["uyarilar"] = list(dict.fromkeys([*a["uyarilar"], *b["uyarilar"], "sayfalar_arasi_birlestirildi"]))
-    a["hucreler"].sort(key=lambda h: (h["satir"], h["sutun"]))
+        if h["satir"] >= baslik_sayisi:
+            yeni["hucreler"].append(h | {"satir": h["satir"] + kaydir, "sutun_basligi": False})
+    yeni["satir_sayisi"] = a["satir_sayisi"] + b["satir_sayisi"] - baslik_sayisi
+    yeni["sayfalar"] = sorted(set(a["sayfalar"]) | set(b["sayfalar"]))
+    yeni["parcalar"] = a["parcalar"] + b["parcalar"]
+    yeni["dipnotlar"] = a["dipnotlar"] + [d for d in b["dipnotlar"] if d not in a["dipnotlar"]]
+    yeni["uyarilar"] = list(dict.fromkeys([*a["uyarilar"], *b["uyarilar"], "sayfalar_arasi_birlestirildi"]))
+    yeni["hucreler"].sort(key=lambda h: (h["satir"], h["sutun"]))
+    return yeni
 
 
 def cikar(pdf_path: Path, rapor_id: str, motorlar: tuple[str, ...] = MOTORLAR_VARSAYILAN) -> list[dict]:
@@ -623,9 +666,11 @@ def docling_tablosu(
     baslik: str,
     sayfa_yuksekligi: float,
     dipnotlar: list[str] | None = None,
-) -> dict:
+) -> dict | None:
     """docling-core `TableData.model_dump()` → tablo kaydı. Hücre kutusu alt-sol orijinliyse çevrilir."""
     n, m = veri["num_rows"], veri["num_cols"]
+    if n < 1 or m < 1:
+        return None  # Docling bazen 0×0 tablo veriyor (Derimod 2025 s. 27); kayıt açılmaz
     hucreler: list[dict] = []
     dolu: set[tuple[int, int]] = set()
     uyarilar: list[str] = []

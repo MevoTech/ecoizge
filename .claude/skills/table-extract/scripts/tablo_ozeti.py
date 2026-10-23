@@ -83,7 +83,15 @@ def ozet(
     return "\n".join(satir) + "\n"
 
 
+def _utf8_cikti() -> None:
+    """Windows'ta yönlendirilen çıktı cp1254 olabilir; '→', '₂' yazarken çökmesin (inceleme bulgu 15)."""
+    for akim in (sys.stdout, sys.stderr):
+        if hasattr(akim, "reconfigure"):
+            akim.reconfigure(encoding="utf-8", errors="replace")
+
+
 def main(argv: list[str]) -> int:
+    _utf8_cikti()
     ap = argparse.ArgumentParser()
     ap.add_argument("dizin", type=Path)
     ap.add_argument("--pdf", type=Path)

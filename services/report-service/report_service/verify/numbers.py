@@ -53,15 +53,17 @@ UNITS: dict[str, tuple[str, float]] = {
     "$": ("USD", 1.0),
 }
 
+PARA_BIRIMLERI = {"TL", "EUR", "USD"}
 _NUM = r"\d{1,3}(?:\.\d{3})+(?:,\d+)?|\d+,\d+|\d+(?:\.\d+)?"
 _UNIT = (
     r"(?:k|M)?t\s?CO\s?[₂2](?:\s?e\b)?|ton\s?CO\s?[₂2](?:\s?e\b)?|[kMG]Wh|m[³3]"  # "CO 2 e": ayrı alt simge  # tCO2e, MWh, m³ …
     r"|TL\b|₺|EUR\b|euro\b|avro\b|€|USD\b|dolar\b|\$"  # para birimi (ADR-014)
     r"|ton\b|kg\b|t\b"
 )
+_PARA_ON = r"(?:(?<![^\W\d_])(?P<cur_pre>(?:TL|USD|EUR)\s+|[₺€$]\s?))?"  # "TL 805.299", "€ 16.000"
 _PATTERN = re.compile(
-    rf"(?P<pct_pre>%|yüzde\s+)?(?P<num>{_NUM})"
-    rf"(?:\s+(?P<scale>bin|milyon|milyar)\b)?"
+    rf"{_PARA_ON}(?P<pct_pre>%|yüzde\s+)?(?P<num>{_NUM})"
+    rf"(?:\s+(?P<scale>bin|milyon|milyar|B[İI]N|M[İI]LYON|M[İI]LYAR)\b)?"
     rf"(?:\s?(?P<pct_post>%)|\s?(?P<unit>{_UNIT}))?",
     flags=re.IGNORECASE,
 )
@@ -124,20 +126,26 @@ def extract_numbers(text: str) -> list[Quantity]:
         except ValueError:
             continue
         unit: str | None = None
+        start, end = m.start(), m.end()
         if m.group("scale"):
-            value *= SCALES[m.group("scale").lower()]
+            value *= SCALES[_tr_kucuk(m.group("scale")).replace("ı", "i")]  # "MİLYON", "MILYON"
         if m.group("pct_pre") or m.group("pct_post"):
             unit = "%"
         elif m.group("unit"):
             unit, factor = normalize_unit(m.group("unit"))
             value *= factor
-        is_year = (
-            unit is None
-            and not m.group("scale")
+        elif m.group("cur_pre"):
+            unit, _ = normalize_unit(m.group("cur_pre"))
+        yil_bicimi = (
+            not m.group("scale")
             and re.fullmatch(r"\d{4}", raw_num) is not None
             and 1900 <= int(raw_num) <= 2100
         )
-        out.append(Quantity(value, unit, m.group(0).strip(), m.start(), m.end(), is_year))
+        if yil_bicimi and m.group("unit") and unit in PARA_BIRIMLERI and m.group("unit")[0].isalpha():
+            # "2025 Avro Bölgesi", "2024 TL'si" gibi: yıl + para birimi adı tutar değildir
+            unit, value, start, end = None, float(raw_num), m.start("num"), m.end("num")
+        is_year = unit is None and yil_bicimi and not m.group("cur_pre")
+        out.append(Quantity(value, unit, text[start:end].strip(), start, end, is_year))
     return out
 
 
@@ -196,6 +204,8 @@ def hucre_degeri(metin: str) -> HucreDegeri | None:
     s = " ".join(metin.split())
     dipnot: list[str] = []
     while (m := _DIPNOT.search(s)) and m.start() > 0:
+        if m.group(1)[0] in "¹²³⁴⁵⁶⁷⁸⁹⁰" and s[m.start() - 1].isalpha():
+            break  # "m³", "m²": birimin parçası, dipnot değil
         dipnot.insert(0, m.group(1))
         s = s[: m.start()].rstrip()
     if not s:

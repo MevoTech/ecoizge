@@ -75,3 +75,24 @@ def test_r_tab_04_docling_resim_sinifi_eklenir_ve_grafik_resmi_kayit_olur():
 def test_r_tab_01_bilinmeyen_motor_reddedilir(rapor):
     with pytest.raises(ValueError):
         st.calistir(rapor, "karel-2025", motor="azure")
+
+
+def test_r_tab_01_paragraf_bagi_bire_bir():
+    t1 = {
+        "sayfalar": [3],
+        "baslik": "",
+        "paragraf_id": None,
+        "hucreler": [{"metin": "Kalem"}, {"metin": "2025"}],
+    }
+    t2 = {
+        "sayfalar": [3],
+        "baslik": "",
+        "paragraf_id": None,
+        "hucreler": [{"metin": "Kalem"}, {"metin": "2025"}],
+    }
+    birimler = [
+        {"paragraf_id": "p1", "tur": "tablo", "sayfa": 3, "metin": "Kalem | 2025\nA | 1"},
+        {"paragraf_id": "p2", "tur": "tablo", "sayfa": 3, "metin": "Kalem | 2025\nB | 2"},
+    ]
+    st.paragraflara_bagla([t1, t2], birimler)
+    assert (t1["paragraf_id"], t2["paragraf_id"]) == ("p1", "p2")

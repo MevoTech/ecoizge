@@ -173,3 +173,37 @@ def test_r_tab_04_tablo_baslik_dolgusu_grafik_sanilmaz(tmp_path):
         _yaz(page, 220 + i * 80, 140, f"{(i + 1) * 1250}")
     doc.save(tmp_path / "t.pdf")
     assert [s for s in fg.cikar(tmp_path / "t.pdf", "x-2025") if s["veri_durumu"] == "vektor_etiket"] == []
+
+
+# ---------- code-reviewer bulguları (2026-10-23) ----------
+
+
+def test_r_tab_04_bulgu12_bitisik_cubukta_etiket_kendi_cubuguna():
+    """A x=100–106 üst=200, B x=106–112 üst=150; A'nın etiketi B'nin içine taşıyordu."""
+    cubuklar = [
+        {"bbox": [100, 200, 106, 300], "renk": KIRMIZI},
+        {"bbox": [106, 150, 112, 300], "renk": KIRMIZI},
+    ]
+    metinler = [
+        {"bbox": [98, 186, 108, 198], "metin": "45"},
+        {"bbox": [104, 136, 114, 148], "metin": "70"},
+        {"bbox": [96, 304, 110, 312], "metin": "A"},
+        {"bbox": [104, 316, 118, 324], "metin": "B"},
+    ]
+    veri, eslesmeyen = fg.cubuk_verisi(cubuklar, metinler, lejant={})
+    assert [(v["deger"]) for v in veri] == [45, 70] and eslesmeyen == 0
+
+
+def test_r_tab_04_bulgu13_taban_yuvarlama_grafigi_bolmez():
+    cubuklar = [{"bbox": [x, 300 - h, x + 10, taban], "renk": KIRMIZI}
+                for x, h, taban in [(100, 50, 299.24), (120, 80, 299.26), (140, 30, 299.25)]]  # fmt: skip
+    gruplar = fg.cubuk_gruplari(cubuklar)
+    assert [len(g) for g, _ in gruplar] == [3]
+
+
+def test_r_tab_04_bulgu13_kucuk_degerli_cubuk_lejant_sayilmaz():
+    cubuklar = [
+        {"bbox": [x, 300 - h, x + 10, 300], "renk": KIRMIZI} for x, h in [(100, 8), (120, 50), (140, 80)]
+    ]
+    gruplar = fg.cubuk_gruplari(cubuklar)
+    assert [len(g) for g, _ in gruplar] == [3]
