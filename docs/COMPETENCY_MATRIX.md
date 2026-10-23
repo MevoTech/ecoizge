@@ -28,8 +28,8 @@ Durum:
 | 9 | Mobil | `frontend-engineer` | — | etkin değil | Kapsam dışı (Teknik Kapsam 6) |
 | 10 | Yapay zekâ | `ml-engineer` | `rag-draft`, `colab-train` | etkin | LLM ile kaynaklı taslak, yer tutuculu üretim |
 | 11 | Makine öğrenmesi | `ml-engineer` | `gap-baseline`, `colab-train` | etkin | TF-IDF+LR taban çizgisi, BERT ince ayarı; Zemzem'in tahmin modelleri |
-| 12 | NLP / RAG | `ml-engineer` | `pdf-extract`, `embed-eval`, `rag-draft`, `numeric-verify` | etkin | Çıkarım, retrieval, üretim, doğrulama |
-| 13 | Bilgisayarlı görü | `ml-engineer` | — | etkin değil | Yalnızca taranmış PDF çıkarsa OCR (`pdf-extract` → `ocr_gerekli`) |
+| 12 | NLP / RAG | `ml-engineer` | `pdf-extract`, `table-extract`, `embed-eval`, `rag-draft`, `numeric-verify` | etkin | Çıkarım, tablo olguları, retrieval, üretim, doğrulama |
+| 13 | Bilgisayarlı görü | `ml-engineer` | `table-extract`, `figure-extract` | etkin | Belge düzeni: tablo yapısı (çizgili, kenarlıksız, bölünen; Docling TableFormer), grafik bölgesi ve vektör grafikten veri; taranmış sayfa OCR'ı hâlâ kapsam dışı (KL-01, KL-14) |
 | 14 | Gömülü sistemler | `architect` | — | etkin değil | Kapsam dışı; sayaç veya IoT veri girişi eklenirse ADR |
 | 15 | Siber güvenlik | `security-auditor` | — | etkin | Tehdit modeli T1–T10, OWASP LLM; denetçi kontrol listesi |
 | 16 | DevOps | `backend-engineer` | — | hazır | Docker Compose, GitHub Actions; `tools/check_all.py` |
@@ -47,4 +47,4 @@ Destek yetkinlikleri (18'in dışında, sistemin işlemesi için gerekli):
 | Kod inceleme ve refaktör | `code-reviewer` | — | etkin | Proje kuralları kontrol listesi |
 | Veri etiketleme | `annotation-assistant` | `label-propose` | etkin | Etiket önerisi (insan onaylı) |
 | İnsan onayı | `engineering-orchestrator` | `label-review` | etkin | Onay arayüzü akışı |
-| Deney ve ölçüm | `evaluator` | `agreement-kappa`, `experiment-run`, `embed-eval` | etkin | κ, P/R/F1, Recall@k, deneyler a–m |
+| Deney ve ölçüm | `evaluator` | `agreement-kappa`, `experiment-run`, `embed-eval`, `table-eval` | etkin | κ, P/R/F1, Recall@k, tablo GriTS ve olgu F1, deneyler a–m |

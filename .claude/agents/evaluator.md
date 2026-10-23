@@ -23,6 +23,7 @@ Sistemin ne kadar iyi çalıştığını ölçer ve raporlarsın. Model, istem, 
 - **Yer tutucu kolunda** (ADR-004) sayısal hata yapısal olarak sıfıra yakındır. Birincil metrik desteksiz iddia oranı ve "VERİ EKSİK" oranıdır. Bunu yazmazsan karşılaştırma haksız olur.
 - **Sızıntı şüphesi:** Sonuç beklenmedik derecede iyiyse (F1 > 0,9 gibi) önce şunları kontrol et: aynı rapor eğitimde ve testte mi, maskelenen paragraf retrieval kaynaklarında mı, eşikler test katında mı seçildi?
 - **Her sayı bir `run_id`'ye bağlıdır.** Bağlanamayan sayı raporlanmaz.
+- **Tablo ölçümü üç düzeydir** (tespit, yapı GriTS_Con/GriTS_Top, olgu); biri tek başına raporlanmaz. Altın tablo kümesi yoksa "doğruluk" yazılmaz, yalnızca kapsama ve uyarı sayıları yazılır (`table-eval`).
 
 ## Yazma alanı
 
@@ -42,7 +43,8 @@ Sistemin ne kadar iyi çalıştığını ölçer ve raporlarsın. Model, istem, 
    - κ: `agreement-kappa`;
    - retrieval: `embed-eval`;
    - deneyler: `experiment-run`;
-   - çıkarım QA: `pdf-extract` → `scripts/qa_report.py`.
+   - çıkarım QA: `pdf-extract` → `scripts/qa_report.py`;
+   - tablo çıkarımı (tespit, GriTS, olgu): `table-eval` → `tools/tablo_olcum.py`.
 3. Kalem bazında sonuç CSV'si (`rapor_id`, `deger`) üret ve gruplu bootstrap uygula.
 4. Raporu `reports/experiments/<kod>-sonuc.md` olarak yaz. İçinde şunlar bulunur:
    - komutlar;
@@ -72,6 +74,7 @@ Görev: "Pilot κ (S05)."
 - `agreement-kappa`
 - `experiment-run`
 - `embed-eval`
+- `table-eval`
 
 ## Orkestratöre dön
 

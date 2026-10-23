@@ -8,6 +8,12 @@ Biçim kuralları:
 - Yalnızca '.' varsa: noktadan sonraki gruplar 3 haneliyse binlik ("1.234" = 1234),
   değilse ondalık ("12.5" = 12.5). "1.234" belirsizdir; Türkçe metin varsayımıyla binlik sayılır.
 - 1900–2100 arası, ayraçsız, birimsiz, ölçeksiz tam sayı yıl kabul edilir.
+- Para birimleri (TL, EUR, USD) birim olarak tanınır; farklı para birimleri ve fiziksel birimler
+  birbiriyle eşlenmez (ADR-014). Kur çevrimi yapılmaz.
+
+Tablo hücresi (`hucre_degeri`) ve başlık birimi (`birim_bul`) da buradadır (R-TAB-02): hücre tek bir
+sayı (ve birim, yüzde, dipnot işareti) içeriyorsa sayısal sayılır; artı işareti atılır; eksi işareti (-, −, –) ve muhasebe
+ayracı "(1.234)" eksi değerdir; "-", "—", "n/a", "yok" eksik değerdir (sıfır değil).
 """
 
 from __future__ import annotations
@@ -21,6 +27,9 @@ SCALES = {"bin": 1e3, "milyon": 1e6, "milyar": 1e9}
 UNITS: dict[str, tuple[str, float]] = {
     "tco2e": ("tCO2e", 1.0),
     "tonco2e": ("tCO2e", 1.0),
+    "tonco2": ("tCO2e", 1.0),
+    "ktco2": ("tCO2e", 1e3),
+    "mtco2": ("tCO2e", 1e6),
     "tco2": ("tCO2e", 1.0),
     "ktco2e": ("tCO2e", 1e3),
     "mtco2e": ("tCO2e", 1e6),
@@ -33,10 +42,23 @@ UNITS: dict[str, tuple[str, float]] = {
     "t": ("t", 1.0),
     "kg": ("t", 1e-3),
     "%": ("%", 1.0),
+    "tl": ("TL", 1.0),
+    "₺": ("TL", 1.0),
+    "eur": ("EUR", 1.0),
+    "euro": ("EUR", 1.0),
+    "avro": ("EUR", 1.0),
+    "€": ("EUR", 1.0),
+    "usd": ("USD", 1.0),
+    "dolar": ("USD", 1.0),
+    "$": ("USD", 1.0),
 }
 
 _NUM = r"\d{1,3}(?:\.\d{3})+(?:,\d+)?|\d+,\d+|\d+(?:\.\d+)?"
-_UNIT = r"(?:k|M)?t\s?CO[₂2]\s?e?|ton\s?CO[₂2]\s?e?|[kMG]Wh|m[³3]|ton\b|kg\b|t\b"  # tCO2e, MWh, m³ …
+_UNIT = (
+    r"(?:k|M)?t\s?CO\s?[₂2](?:\s?e\b)?|ton\s?CO\s?[₂2](?:\s?e\b)?|[kMG]Wh|m[³3]"  # "CO 2 e": ayrı alt simge  # tCO2e, MWh, m³ …
+    r"|TL\b|₺|EUR\b|euro\b|avro\b|€|USD\b|dolar\b|\$"  # para birimi (ADR-014)
+    r"|ton\b|kg\b|t\b"
+)
 _PATTERN = re.compile(
     rf"(?P<pct_pre>%|yüzde\s+)?(?P<num>{_NUM})"
     rf"(?:\s+(?P<scale>bin|milyon|milyar)\b)?"
@@ -83,7 +105,7 @@ def parse_tr_number(text: str) -> float:
 
 
 def normalize_unit(unit: str) -> tuple[str, float]:
-    key = re.sub(r"\s+", "", unit).replace("₂", "2").lower()
+    key = re.sub(r"\s+", "", unit).replace("₂", "2").lower()  # "ton CO 2 e" → "tonco2e"
     if key not in UNITS:
         raise ValueError(f"bilinmeyen birim: {unit!r}")
     return UNITS[key]
@@ -137,3 +159,87 @@ def format_tr(value: float, decimals: int = 0) -> str:
     """12450.5 → '12.450,5' (Türkçe biçim)."""
     s = f"{value:,.{decimals}f}"
     return s.replace(",", "§").replace(".", ",").replace("§", ".")
+
+
+# ---------- tablo hücresi ve başlık birimi (R-TAB-02, ADR-014) ----------
+
+_EKSIK = {"-", "–", "—", "--", "n/a", "na", "n.a.", "yok", "mevcut değil", "uygulanamaz", "hesaplanmadı"}
+_DIPNOT = re.compile(r"\s*(\*+|\(\d{1,2}\)|[¹²³⁴⁵⁶⁷⁸⁹⁰]+)$")
+_EKSI = "-−–"
+_HARF = "A-Za-zÇĞİÖŞÜçğıöşü"
+_BIRIM_ARAMA = re.compile(
+    rf"(?<![{_HARF}\d])(?:(?P<scale>bin|milyon|milyar)\s+)?(?P<unit>{_UNIT})(?![{_HARF}])",
+    flags=re.IGNORECASE,
+)
+
+
+@dataclass(frozen=True)
+class HucreDegeri:
+    deger: float | None  # taban birimde; eksik değerde None
+    birim: str | None
+    ham: str
+    eksik: bool = False
+    dipnot: tuple[str, ...] = ()
+    yil: bool = False
+
+
+def _tr_kucuk(s: str) -> str:
+    return s.replace("I", "ı").replace("İ", "i").lower()
+
+
+def hucre_degeri(metin: str) -> HucreDegeri | None:
+    """Tablo hücresinin sayısal değeri; hücre sayısal değilse None.
+
+    Hücre yalnızca tek bir sayısal ifade (birim, yüzde ve ölçekle) ve isteğe bağlı dipnot işaretleri
+    ("*", "(1)", "¹") içeriyorsa sayısaldır. "Kapsam 1", "12.450 ve 3.200" sayısal değildir.
+    """
+    s = " ".join(metin.split())
+    dipnot: list[str] = []
+    while (m := _DIPNOT.search(s)) and m.start() > 0:
+        dipnot.insert(0, m.group(1))
+        s = s[: m.start()].rstrip()
+    if not s:
+        return None
+    if _tr_kucuk(s) in _EKSIK:
+        return HucreDegeri(None, None, metin, eksik=True, dipnot=tuple(dipnot))
+    eksi = False
+    if s.startswith("(") and s.endswith(")"):
+        s, eksi = s[1:-1].strip(), True
+    if s[:1] in _EKSI and len(s) > 1:
+        s, eksi = s[1:].lstrip(), not eksi
+    elif s[:1] == "+" and len(s) > 1:
+        s = s[1:].lstrip()
+    s = re.sub(r"^%\s+", "%", s)
+    qs = extract_numbers(s)
+    if len(qs) != 1 or qs[0].start != 0 or qs[0].end != len(s):
+        return None
+    q = qs[0]
+    return HucreDegeri(
+        -q.value if eksi else q.value,
+        q.unit,
+        metin,
+        dipnot=tuple(dipnot),
+        yil=q.is_year and not eksi,
+    )
+
+
+def birimler_bul(metin: str) -> list[tuple[str, float]]:
+    """Metindeki bütün birim anışları (sırasıyla): "Enerji (MWh) ve emisyon (tCO2e)" → iki birim."""
+    out: list[tuple[str, float]] = []
+    if "%" in metin:
+        out.append(("%", 1.0))
+    for m in _BIRIM_ARAMA.finditer(metin):
+        try:
+            taban, carpan = normalize_unit(m.group("unit"))
+        except ValueError:
+            continue
+        if m.group("scale"):
+            carpan *= SCALES[_tr_kucuk(m.group("scale"))]
+        out.append((taban, carpan))
+    return out
+
+
+def birim_bul(metin: str) -> tuple[str, float] | None:
+    """Sütun başlığı ya da tablo başlığındaki birim: "(Bin TL)" → ("TL", 1000.0); yoksa None."""
+    bulunan = birimler_bul(metin)
+    return bulunan[0] if bulunan else None

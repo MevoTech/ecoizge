@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Katalog ve etiket CSV doğrulayıcısı (R-KAT-01, R-ETK-01).
+"""Katalog, etiket ve yapısal tablo dosyaları doğrulayıcısı (R-KAT-01, R-ETK-01, R-TAB-01…04).
 
 Kullanım:
     python tools/validate_data.py                 # data/catalog ve data/labels altındaki tüm CSV'ler
@@ -231,9 +231,64 @@ def validate_paragraph_records(path: Path, catalog_ids: set[str] | None = None) 
     return errs
 
 
+def _jsonl(path: Path) -> tuple[list[object], list[str]]:
+    kayitlar, errs = [], []
+    for no, satir in enumerate(path.read_text(encoding="utf-8").splitlines(), start=1):
+        if not satir.strip():
+            continue
+        try:
+            kayitlar.append(json.loads(satir))
+        except json.JSONDecodeError as e:
+            errs.append(f"{path}:{no}: geçersiz JSON ({e.msg})")
+    return kayitlar, errs
+
+
+def validate_structure_records(path: Path) -> list[str]:
+    """Yapısal tablo, olgu ve şekil dosyaları (`tables.jsonl`, `facts.jsonl`, `figures.jsonl`; ADR-014).
+
+    Kurallar `tools/tablo_kurallari.py`'dan gelir (çıkarıcı ve ölçüm de aynı modülü kullanır). Olgu dosyası
+    yanındaki tablo dosyasıyla çapraz denetlenir: her olgu var olan bir hücreye bağlı ve değeri o hücreden
+    yeniden üretilebilir olmalı.
+    """
+    import tablo_kurallari as tk
+
+    kayitlar, errs = _jsonl(path)
+    ad = path.name
+    if ad.endswith("tables.jsonl"):
+        denet, anahtar = tk.tablo_hatalari, "tablo_id"
+    elif ad.endswith("figures.jsonl"):
+        denet, anahtar = tk.sekil_hatalari, "sekil_id"
+    else:
+        tablo_yolu = path.with_name(ad.replace("facts.jsonl", "tables.jsonl"))
+        if not tablo_yolu.exists():
+            return [
+                *errs,
+                f"{path}: yanında tablo dosyası yok ({tablo_yolu.name}); olgu tek başına doğrulanamaz",
+            ]
+        tablolar = {t.get("tablo_id"): t for t in _jsonl(tablo_yolu)[0] if isinstance(t, dict)}
+
+        def denet(o):
+            return tk.olgu_hatalari(o, tablolar)
+
+        anahtar = "olgu_id"
+    gorulen: set[str] = set()
+    for no, k in enumerate(kayitlar, start=1):
+        errs += [f"{path}:{no}: {h}" for h in denet(k)]
+        kimlik = k.get(anahtar) if isinstance(k, dict) else None
+        if kimlik in gorulen:
+            errs.append(f"{path}:{no}: tekrarlanan {anahtar} {kimlik}")
+        gorulen.add(kimlik)
+    return errs
+
+
+YAPI_DOSYALARI = ("tables.jsonl", "facts.jsonl", "figures.jsonl")
+
+
 def validate_file(path: Path, catalog_ids: set[str] | None = None) -> list[str]:
     if path.name.endswith(".paragraf.jsonl"):
         return validate_paragraph_records(path, catalog_ids)
+    if path.name.endswith(YAPI_DOSYALARI):
+        return validate_structure_records(path)
     header, rows = read_csv(path)
     if header in (CATALOG_HEADER, CATALOG_HEADER_V1):
         return validate_catalog(path, header, rows)
@@ -252,6 +307,7 @@ def default_files(root: Path = ROOT) -> list[Path]:
     files += sorted((root / "data" / "labels").rglob("*.csv"))
     files += sorted((root / "data" / "labels").rglob("*.paragraf.jsonl"))
     files += sorted((root / "data" / "raw" / "public").glob("KAYNAKLAR.csv"))
+    files += sorted(f for ad in YAPI_DOSYALARI for f in (root / "data" / "gold" / "tables").rglob(f"*{ad}"))
     return files
 
 

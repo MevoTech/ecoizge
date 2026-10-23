@@ -42,6 +42,7 @@ S01–S24 aşama protokolünden önce `main` dalında yürüdü; dal ve etiket d
 | S25 | Web arayüzü iskeleti ve veri giriş formları | ⬜ |  |  |  |  |  |
 | S26 | Boşluk matrisi ve taslak editörü | ⬜ |  |  |  |  |  |
 | S27 | Panel sayfası | ⬜ |  |  |  |  |  |
+| S28 | Tablo ve grafik çıkarımı | 🟨 | asama/S28-tablo-grafik |  | 2026-10-23 |  | §4 S28 |
 
 ## 2. Kararlar ve kullanıcı eylemleri
 
@@ -72,6 +73,7 @@ Ayrıntılar [DECISIONS.md](DECISIONS.md)'de. Kabul edilenler: ADR-001…ADR-006
 | U-13 | Uzman değerlendiricileri belirle | S23.T1 | — |
 | U-14 | Docker Desktop (WSL 2) kur | S09.T1 | — |
 | U-15 | Zemzem ikinci etiketleyici olarak 30–50 paragraf etiketler (D-06 kabul edilirse) | S05.T7 | ADR-012 |
+| U-16 | Altın tablo kümesi: 4 rapor × 5 tablo PDF'ten elle CSV'ye (en az 2 kenarlıksız, 1 bölünen, 1 birleşik başlıklı); `altin_donustur.py` ile `data/gold/tables/`; olguların birim ve dönemini kontrol | S28.T6 | `.claude/skills/table-eval/SKILL.md` Adımlar 1 |
 
 ## 3. Riskler
 
@@ -412,6 +414,10 @@ Geri alma sonrası: 121/121 geçti. Tutarlılık testleri bu denemeden sonra ekl
 | S03.T3 | Kullanıcının makinesindeki 18 boş `.part` dosyası ve `_araclar/parca/` | U-01 sırasında kullanıcı siler | Bu klasörde silme izni yok |
 | S02 | GRI 302/305 maddeleri | İkinci aşama (D-04) | MVP kapsamı |
 | — | ESRS | Gelecek çalışma (D-04) | MVP kapsamı |
+| S28.T2 | Olguların (`facts.jsonl`, `olgu_metni`) retrieval birimi olarak dizine girmesi | S13 | Embedding modeli seçilmeden dizin kurulmaz |
+| S28.T3 | Taslak sayısının olguya bağlanması (yer tutucu doldurma ve `verify.match` kaynağı olarak olgu) | S18 | Doğrulama katmanı entegrasyonu orada |
+| S28.T6 | Onay arayüzünde "Tablo kontrolü" ekranı (ızgarayı PDF yanında gösterme, düzeltme) | S07 sonrası, ihtiyaç olursa | Altın küme şimdilik CSV ile; ekran insan yükünü azaltırsa açılır |
+| S28.T2 | `paragraphs.jsonl` tablo birimlerinin yapısal tablodan yeniden üretilmesi | Kılavuz v1 turu (S05 sonrası) | Etiket kimlikleri bağlı; kimlik eşlemesi gerekir (KL-02) |
 
 ## 6. Otonom kararlar
 
@@ -431,3 +437,9 @@ Ajanın kullanıcıya sormadan verdiği kararlar. Kullanıcı bu tabloyu okuyara
 | 2026-10-23 | S07.T7 | 10 dakikayı aşan paragraf süresi "kesintili" sayılır, toplam ve medyana girmez | Ara verme etiketleme maliyetini şişirmesin | ADR-013 |
 | 2026-10-23 | S01.T5 | `noor` belge yapısı uyarlandı; `tasks/` kaldırıldı, plan tek dosyada | Kullanıcı isteği; tek kaynak ilkesi | C-04 |
 | 2026-10-23 | S01.T5 | Geliştirme 2'deki web arayüzü için S25–S27 eklendi | Plan ile kaynak belge çelişkisi | C-01 |
+| 2026-10-23 | S28 | Tablo ve grafik işi yeni aşama S28 olarak açıldı (S04'e eklenmedi) | S04 elle kontrol bekliyor (U-03); tablo yapısı ayrı gereksinimler (R-TAB-01…05) ve ayrı ölçüm ister | Plan S28 |
+| 2026-10-23 | S28.T1 | Kayıt biçimi motordan bağımsız, hücre alanları docling-core `TableCell` anlamında; `paragraphs.jsonl` değişmedi | Motor değişince şema değişmesin; pilot örneklemi ve kör etiket kimlikleri korunsun | ADR-014 |
+| 2026-10-23 | S28.T3 | `verify.numbers`'a para birimi (TL, EUR, USD) eklendi; farklı birimler eşlenmez, kur çevrimi yok | Finansal etki tabloları TL/EUR; birimsiz kalırsa "805.299 TL" ile "805.299 ton" ayırt edilemez | ADR-014 |
+| 2026-10-23 | S28.T5 | Docling isteğe bağlı ikinci motor (`requirements-extract.txt`), CI'da kurulmaz; varsayılan PyMuPDF; karar ölçümle (D-09) | Torch + model indirmesi ağır; ölçümsüz motor değişikliği yapılmaz | ADR-014, D-09 |
+| 2026-10-23 | S28.T4 | Grafikte değer yalnızca yazılı etiketten; çubuk boyundan ve görüntüden değer üretilmez | Uydurma sonuç yasağı; yaklaşık değer ayrı işaret ve ölçüm ister | ADR-014, KL-14 |
+| 2026-10-23 | S28.T6 | Altın tablo kümesi motor çıktısından kopyalanmaz, insan PDF'ten yazar; kutu koordinatı yok, eşleme içerikle | Ölçülen motoru kayırmamak; insan için kutu ölçmek pratik değil | `table-eval` |

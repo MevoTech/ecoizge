@@ -1,6 +1,7 @@
 """Katalog ve etiket doğrulayıcı testleri (R-KAT-01, R-ETK-01)."""
 
 import csv
+import json
 import shutil
 from pathlib import Path
 
@@ -181,3 +182,69 @@ def test_r_etk_01_paragraf_kaydi_kanit_cekirdekle_tutarli(tmp_path):
     assert any("1–1 arasında" in e for e in validate_file(yan))
     _, yan = _paragraf_dosyalari(tmp_path, karsilama="U")
     assert any("yalnızca 2 ya da 1 verilen maddeler" in e for e in validate_file(yan))
+
+
+# ---------- yapısal tablo, olgu, şekil dosyaları (R-TAB-01…04, ADR-014) ----------
+
+
+def _yapi_tablosu():
+    hucreler = [
+        {"satir": r, "sutun": c, "satir_kapsam": 1, "sutun_kapsam": 1, "metin": m, "sutun_basligi": r == 0,
+         "satir_basligi": c == 0 and r > 0, "bolum_satiri": False, "sayfa": 3, "bbox": [0, 0, 10, 10]}
+        for r, satir in enumerate([["Kapsam", "2024 (tCO2e)"], ["Kapsam 1", "12.450"]])
+        for c, m in enumerate(satir)
+    ]  # fmt: skip
+    return {
+        "tablo_id": "karel-2025-t003-01", "rapor_id": "karel-2025", "sayfalar": [3],
+        "parcalar": [{"sayfa": 3, "bbox": [0, 0, 100, 40]}], "baslik": "Tablo 1", "dipnotlar": [], "birim": None,
+        "satir_sayisi": 2, "sutun_sayisi": 2, "hucreler": hucreler, "motor": "insan", "paragraf_id": None,
+        "uyarilar": [], "sema_surumu": "tablo-0.1",
+    }  # fmt: skip
+
+
+def _yapi_olgusu(**degisen):
+    o = {
+        "olgu_id": "karel-2025-t003-01-r01c01", "rapor_id": "karel-2025", "tablo_id": "karel-2025-t003-01",
+        "satir": 1, "sutun": 1, "sayfa": 3, "bbox": [0, 0, 10, 10], "deger": 12450.0, "birim": "tCO2e",
+        "carpan": 1.0, "birim_kaynagi": "sutun_basligi", "ham": "12.450", "eksik": False, "dipnot": [],
+        "yil": False, "satir_yolu": ["Kapsam 1"], "sutun_yolu": ["2024 (tCO2e)"], "donem": "2024",
+        "sema_surumu": "olgu-0.1",
+    }  # fmt: skip
+    return o | degisen
+
+
+def _yaz_jsonl(yol, kayitlar):
+    yol.write_text("".join(json.dumps(k, ensure_ascii=False) + "\n" for k in kayitlar), encoding="utf-8")
+    return yol
+
+
+def test_r_tab_01_gecerli_tablo_ve_olgu_dosyasi(tmp_path):
+    t = _yaz_jsonl(tmp_path / "karel-2025.tables.jsonl", [_yapi_tablosu()])
+    o = _yaz_jsonl(tmp_path / "karel-2025.facts.jsonl", [_yapi_olgusu()])
+    assert validate_file(t) == [] and validate_file(o) == []
+
+
+def test_r_tab_01_izgara_bosluklu_tablo_reddedilir(tmp_path):
+    bozuk = _yapi_tablosu()
+    bozuk["hucreler"].pop()
+    errs = validate_file(_yaz_jsonl(tmp_path / "x.tables.jsonl", [bozuk, _yapi_tablosu()]))
+    assert any("kaplanmayan" in e for e in errs) and any("tekrarlanan" in e for e in errs)
+
+
+def test_r_tab_02_olgu_kaynakla_tutarsiz_reddedilir(tmp_path):
+    _yaz_jsonl(tmp_path / "x.tables.jsonl", [_yapi_tablosu()])
+    errs = validate_file(_yaz_jsonl(tmp_path / "x.facts.jsonl", [_yapi_olgusu(deger=1245.0)]))
+    assert any("değer" in e for e in errs)
+    (tmp_path / "x.tables.jsonl").unlink()
+    assert any("tablo dosyası yok" in e for e in validate_file(tmp_path / "x.facts.jsonl"))
+
+
+def test_r_tab_04_sekil_dosyasi_veri_durumu_tutarli(tmp_path):
+    s = {
+        "sekil_id": "x-g001-01", "rapor_id": "x", "sayfa": 1, "bbox": [0, 0, 10, 10], "tur": "grafik",
+        "baslik": "", "metin": "", "veri": [{"kategori": "A", "seri": None, "deger": 1.0, "ham": "1", "bbox": None}],
+        "veri_durumu": "goruntu_veri_yok", "eslesmeyen_etiket": 0, "motor": "pymupdf", "sinif": None,
+        "uyarilar": [], "sema_surumu": "sekil-0.1",
+    }  # fmt: skip
+    errs = validate_file(_yaz_jsonl(tmp_path / "x.figures.jsonl", [s]))
+    assert any("vektor_etiket" in e for e in errs)

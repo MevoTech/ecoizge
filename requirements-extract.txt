@@ -1,0 +1,10 @@
+# Yapısal tablo ve resim sınıflandırma motoru (S28, ADR-014). İSTEĞE BAĞLI: CI'da kurulmaz; varsayılan motor
+# PyMuPDF'tir (requirements-train.txt). Kullanım: python pipelines/structure.py <pdf> ... --motor docling
+# DURUM: Mehmet Güneş'in 2026-10-22 genel bağımlılık onayı ("gerekli olan tüm kütüphaneleri indirebilirsin";
+# .claude/rules/security.md §İnsan onayı 7) kapsamında eklendi; ADR-014'te ayrıca onaya sunuldu.
+# Yerel çalışır; belge hiçbir servise gönderilmez (ADR-011). İlk koşuda model ağırlıkları HuggingFace'ten
+# indirilir (~500 MB): docling-project/docling-models (CDLA-Permissive-2.0 / Apache-2.0),
+# docling-layout-heron ve DocumentFigureClassifier (Apache-2.0).
+# Lisans: Docling MIT. CPU'da sayfa başına ~1–5 sn (2026-10-23, 2 çekirdek).
+# torch CPU sürümü için önce: pip install torch torchvision --index-url https://download.pytorch.org/whl/cpu
+docling>=2.142,<3
