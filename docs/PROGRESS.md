@@ -156,7 +156,7 @@ En yeni kayıt en üstte. 2026-10-23 öncesi kayıtlar eski düzende tarih başl
   - Körleme: onay ekranından atlama kapatıldı (testli). Korumalı yol eksikliği D-08'de.
   - Windows: kilitli dosya ve BOM ele alındı; gerçek Windows denemesi U-02'de (KL-08).
 - Ertelenen: D-08 (kullanıcı onayı); S01.T6 → U-08.
-- Etiket: `s01-done` (bu commit).
+- Etiket: `s01-done` (commit 743e541). Etiket yalnızca yerelde: bulut çalışma alanının vekili etiket göndermeye izin vermiyor; kullanıcının makinesinden `git tag s01-done 743e541 && git push origin s01-done` ile gönderilir.
 
 ### S03: Rapor derlemi, ağ izniyle indirme ve aktarım (2026-10-23)
 
