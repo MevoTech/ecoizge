@@ -20,3 +20,7 @@ runs/**/*.pt
 # Kamu rapor PDFleri git dışında; yalnızca manifest (KAYNAKLAR.csv) izlenir
 data/raw/public/**/*.pdf
 data/raw/public/**/*.PDF
+
+# Windows kurulum betiğinin günlükleri (tools/windows/kurulum.bat)
+tools/windows/kurulum.log
+tools/windows/sonuc.txt
