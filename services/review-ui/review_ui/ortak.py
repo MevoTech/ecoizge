@@ -2,7 +2,9 @@
 
 from __future__ import annotations
 
+import csv
 import os
+import time
 from pathlib import Path
 
 REPO = Path(__file__).resolve().parents[3]
@@ -29,3 +31,50 @@ def md_kacis(metin: str) -> str:
     for ch in "\\`*_{}[]<>()#+-.!|$~":
         metin = metin.replace(ch, "\\" + ch)
     return metin.replace("\n", "  \n")
+
+
+def tr_kucuk(metin: str) -> str:
+    """Türkçe kurallı küçük harf: I → ı, İ → i (`str.lower()` "İ"yi "i̇" yapar)."""
+    return metin.replace("I", "ı").replace("İ", "i").lower()
+
+
+_DENEME = 3
+_BEKLEME = 0.2  # saniye; testte 0
+
+
+def atomik_csv_yaz(path: Path, alanlar: list[str], satirlar: list[dict[str, str]]) -> None:
+    """CSV'yi önce `.tmp`'ye yazar, sonra yerine koyar; yarım dosya kalmaz.
+
+    Windows'ta dosya Excel'de açıksa (ya da OneDrive eşitliyorsa) `replace` PermissionError verir.
+    Kısa aralıklarla yeniden denenir; olmazsa geçici dosya silinir ve anlaşılır bir hata verilir
+    (ekranlar ValueError'ı kullanıcıya gösterir). KL-11.
+    """
+    path.parent.mkdir(parents=True, exist_ok=True)
+    gecici = path.with_suffix(".tmp")
+    with gecici.open("w", encoding="utf-8", newline="") as fh:
+        w = csv.DictWriter(fh, fieldnames=alanlar)
+        w.writeheader()
+        w.writerows(satirlar)
+    for deneme in range(_DENEME):
+        try:
+            gecici.replace(path)
+            return
+        except PermissionError:
+            if deneme + 1 < _DENEME:
+                time.sleep(_BEKLEME)
+    gecici.unlink(missing_ok=True)
+    raise KayitHatasi(
+        f"{path.name} başka bir programda açık (Excel?). Dosyayı kapatıp yeniden kaydet; kaydın kaybolmadı."
+    )
+
+
+class KayitHatasi(ValueError):
+    """Dosya yazılamadı; ekranda kullanıcıya gösterilir."""
+
+
+def csv_oku(path: Path) -> list[dict[str, str]]:
+    """UTF-8 CSV okur; Excel'in eklediği BOM'u atar."""
+    if not path.exists():
+        return []
+    with path.open(encoding="utf-8-sig", newline="") as fh:
+        return list(csv.DictReader(fh))

@@ -9,7 +9,7 @@ Karar kaydı, tez savunmasında "neden böyle yaptınız?" sorusunun yazılı ce
 
 ## ADR mi, görev notu mu?
 
-| ADR yaz | Görev dosyasının "Kararlar" bölümüne yaz |
+| ADR yaz | PROGRESS §6 "Otonom kararlar"a yaz |
 |---|---|
 | Birden çok görevi ya da Zemzem'in modülünü etkiler | Yalnızca o görevin uygulama ayrıntısı |
 | Geri alınması maliyetlidir (şema, vektör boyutu, kapsam) | Kolayca değiştirilir (değişken adı, dosya düzeni) |
@@ -30,7 +30,7 @@ Karar kaydı, tez savunmasında "neden böyle yaptınız?" sorusunun yazılı ce
    Kanıt: <araştırma notu, run_id ya da belge bölümü>
    ```
 3. Ajanlar ADR'yi en fazla `önerildi` durumunda yazar. `kabul` durumuna yalnızca kullanıcının açık onayıyla geçer; onay tarihi `Karar sahibi` alanının yanına yazılır.
-4. Etkilenen `tasks/Sxx` dosyalarının "Kararlar" bölümüne ADR numarasını ekle.
+4. Kullanıcı kararı bekleniyorsa `docs/DECISIONS.md` "Açık kararlar" tablosuna D-xx satırı ekle; etkilenen plan görevlerini ✋ ve U-xx ile işaretle.
 5. `python tools/check_consistency.py`: belgelerde atıf yapılan her ADR numarasının tanımlı olduğunu denetler.
 
 ## Tuzaklar
@@ -47,4 +47,4 @@ Repodaki gerçek örnek: `docs/DECISIONS.md` → ADR-004 (yer tutuculu üretim).
 
 - [ ] Sıradaki numara; en az iki seçenek ya da gerekçe
 - [ ] Durum `önerildi` (kabul yalnızca kullanıcı onayıyla)
-- [ ] Görev dosyaları güncellendi; denetleyici geçti
+- [ ] D-xx ve plan görevleri güncellendi; denetleyici geçti

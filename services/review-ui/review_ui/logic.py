@@ -6,11 +6,12 @@ Akış: data/labels/proposals/*.csv → insan kararı → data/labels/reviewed/<
 
 from __future__ import annotations
 
-import csv
 import json
 from dataclasses import dataclass
 from datetime import UTC, date, datetime
 from pathlib import Path
+
+from review_ui.ortak import atomik_csv_yaz, csv_oku
 
 LABEL_HEADER = [
     "etiket_id", "tur", "rapor_id", "sirket", "yil", "paragraf_id", "sayfa", "bolum_basligi",
@@ -42,20 +43,11 @@ class Paths:
 
 
 def read_rows(path: Path) -> list[dict[str, str]]:
-    if not path.exists():
-        return []
-    with path.open(encoding="utf-8", newline="") as fh:
-        return list(csv.DictReader(fh))
+    return csv_oku(path)
 
 
 def write_rows(path: Path, rows: list[dict[str, str]]) -> None:
-    path.parent.mkdir(parents=True, exist_ok=True)
-    tmp = path.with_suffix(".tmp")
-    with tmp.open("w", encoding="utf-8", newline="") as fh:
-        w = csv.DictWriter(fh, fieldnames=LABEL_HEADER)
-        w.writeheader()
-        w.writerows(rows)
-    tmp.replace(path)  # yarım dosya kalmasın
+    atomik_csv_yaz(path, LABEL_HEADER, rows)  # yarım dosya kalmasın; kilitli dosyada anlaşılır hata
 
 
 def proposal_files(paths: Paths) -> list[Path]:

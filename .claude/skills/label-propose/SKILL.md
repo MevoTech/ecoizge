@@ -25,13 +25,13 @@ Etiketleme kılavuzunu (`docs/labeling/etiket_kilavuzu_v0.md`) uygulayarak öner
 
 ## Adımlar
 
-1. **Örneklem** (yalnızca pilot):
+1. **Örneklem** (yalnızca pilot). Kanonik örneklem `data/labels/pilot/orneklem.jsonl`'dur; kör etiketleme ekranı yalnızca onu okur (C-02). Bu dizine sen yazamazsın: komutu orkestratör koşar ya da sen önerirsin.
    ```
-   python .claude/skills/label-propose/scripts/sample_pilot.py data/processed/karel-2025/paragraphs.jsonl \
+   python .claude/skills/label-propose/scripts/sample_pilot.py data/labels/pilot/birimler/*.jsonl \
      --catalog data/catalog/catalog_v0.csv --aday 30 --rastgele 20 --seed 43 \
-     --out data/labels/proposals/pilot-orneklem.jsonl --hints data/labels/proposals/pilot-ipuclari.json
+     --out data/labels/pilot/orneklem.jsonl --hints data/labels/proposals/pilot_ipuclari.json
    ```
-   `pilot-orneklem.jsonl` insana gider; ipucu içermez. `pilot-ipuclari.json` yalnızca senin içindir: her paragraf için en olası üç madde.
+   Örneklem insana gider; ipucu içermez. `data/labels/proposals/pilot_ipuclari.json` yalnızca senin içindir: her paragraf için en olası üç madde. Betik var olan örneklemin üzerine `--force` olmadan yazmaz: etiketleme başladıktan sonra örneklem değişirse etiketler sahipsiz kalır (kör ekran örneklemin SHA-256 özetini denetler ve durur).
 2. **Her paragraf için karar ver.** Kılavuz §4'ü sırayla uygula:
    1. Paragrafın konusu hangi maddelerin `baslik` ve `gereklilik_ozeti` alanlarıyla örtüşüyor?
    2. Madde kaç unsurdan oluşuyor; paragraf bunların kaçını karşılıyor?
@@ -43,8 +43,8 @@ Etiketleme kılavuzunu (`docs/labeling/etiket_kilavuzu_v0.md`) uygulayarak öner
 4. **Gerekçe:** en fazla iki cümle. Hangi unsurun var ya da eksik olduğunu ve kılavuzun hangi bölümüne dayandığını yaz (ör. "Organ adı var, sıklık yok (§4.2).").
 5. **Dönüştür ve doğrula:**
    ```
-   python .claude/skills/label-propose/scripts/to_proposals.py --paragraphs data/labels/proposals/pilot-orneklem.jsonl \
-     --judgments kararlar.jsonl --out data/labels/proposals/pilot-kor-karel-2026-10-23.csv --tarih 2026-10-23
+   python .claude/skills/label-propose/scripts/to_proposals.py --paragraphs data/labels/pilot/orneklem.jsonl \
+     --judgments kararlar.jsonl --out data/labels/proposals/pilot_v0.csv --tarih 2026-10-23
    ```
    Kararı olmayan bir paragraf, bilinmeyen bir madde ya da geçersiz bir değer varsa betik dosyayı **yazmaz** ve 1 ile çıkar.
 6. Orkestratöre raporla: dosya yolu, paragraf sayısı, düzey dağılımı ve `kılavuz-belirsiz` satırlarının listesi.

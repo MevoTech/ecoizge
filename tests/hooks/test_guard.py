@@ -46,7 +46,7 @@ def w(path: str) -> dict:
         ("evaluator", "reports/experiments/r1.md"),
         ("researcher", "docs/research/2026-10-22-x.md"),
         (None, "docs/PROGRESS.md"),
-        ("engineering-orchestrator", "tasks/S01-ajan-altyapisi.md"),
+        ("engineering-orchestrator", "docs/DEVELOPMENT_PLAN.md"),
     ],
 )
 def test_allowed_writes(agent, path):

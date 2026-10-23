@@ -8,7 +8,7 @@ GİBTÜ Bilgisayar Mühendisliği bitirme projesi (2026–2027). Danışman: Dr.
   - taslaktaki her sayıyı kaynağıyla doğrular.
 - **Tahminleme modülü (Zemzem Boyluğ):** emisyon tahmini, senaryo ve duyarlılık analizi.
 
-Durum: **F1 (araştırma).** Ne çalışıyor, ne çalışmıyor: [`docs/PROGRESS.md`](docs/PROGRESS.md) · Görevler: [`tasks/README.md`](tasks/README.md)
+Durum: **F1 (araştırma).** Ne çalışıyor, ne çalışmıyor: [`docs/PROGRESS.md`](docs/PROGRESS.md) · Plan: [`docs/DEVELOPMENT_PLAN.md`](docs/DEVELOPMENT_PLAN.md) · Kullanım kılavuzu: [`docs/kullanim/ELLE_KONTROL_VE_PILOT.md`](docs/kullanim/ELLE_KONTROL_VE_PILOT.md)
 
 ## Hızlı başlangıç
 
@@ -38,11 +38,11 @@ streamlit run services/review-ui/app.py    # etiket onay arayüzü
 ```
 .claude/        ajanlar, skill'ler, kurallar, kancalar, ayarlar
 docs/           gereksinim, mimari, API, güvenlik, test planı, kararlar, ilerleme
-tasks/          S01–S24 görev dosyaları
+.agents/        Antigravity iş akışı yönlendiricileri
 services/       report-service (Mehmet), review-ui; forecast-service (Zemzem, F3)
 shared/         ortak JSON sözleşmeleri
 tools/          doğrulayıcılar ve kalite kapısı
 data/           katalog, etiketler (öneri → onaylı → altın)
 ```
 
-Claude Code ile çalışma: [`CLAUDE.md`](CLAUDE.md).
+Yapay zekâ ajanlarıyla çalışma: [`AGENTS.md`](AGENTS.md) (kurallar), [`docs/AI_WORKFLOW.md`](docs/AI_WORKFLOW.md) (döngü).

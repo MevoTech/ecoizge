@@ -227,3 +227,213 @@ def test_r_hil_01_yonlendirici_turkce_menu(veri):
     at = _sayfa("app.py").run()
     assert not at.exception
     assert at.title[0].value == "EcoIzge · Çalışma ekranları"  # varsayılan ekran: Başlangıç
+
+
+# ---------- code-reviewer 2026-10-23 bulguları (önce kırmızı yazıldı) ----------
+def _oneri_yaz(data: Path, birimler: list[dict], metin_on: str) -> Path:
+    from review_ui.logic import LABEL_HEADER, write_rows
+
+    satirlar = [
+        dict.fromkeys(LABEL_HEADER, "")
+        | {
+            "etiket_id": f"{b['paragraf_id']}:TSRS2-YON-06a",
+            "tur": "paragraf",
+            "rapor_id": b["rapor_id"],
+            "paragraf_id": b["paragraf_id"],
+            "sayfa": str(b["sayfa"]),
+            "metin": f"{metin_on} {b['paragraf_id']}",
+            "madde_id": "TSRS2-YON-06a",
+            "karsilama": "2",
+            "guven": "0.9",
+            "gerekce": "model gerekçesi",
+            "etiketleyen": "annotation-assistant",
+            "kaynak": "model",
+        }
+        for b in birimler
+    ]
+    hedef = data / "labels" / "proposals" / "pilot_v0.csv"
+    write_rows(hedef, satirlar)
+    return hedef
+
+
+def test_r_etk_01_onay_ekrani_pilot_bitmeden_pilot_onerisini_gostermez(veri):
+    """Bulgu 1 (kritik): menüden '3 · Etiket onayı'na geçince kör pilot bozuluyordu."""
+    data = veri / "data"
+    (data / "labels/proposals/pilot.csv").unlink()
+    orneklem = kor.orneklem_oku(data / "labels/pilot/orneklem.jsonl")
+    _oneri_yaz(data, orneklem, "PILOT_ONERI_METNI")
+    cikti = kor.KorYollar(data).cikti("Mehmet Güneş")
+    kor.kaydet(cikti, orneklem[0], {}, "Mehmet Güneş", IDS)  # 1/3: pilot sürüyor
+
+    at = _sayfa("ekranlar/etiket_onayi.py").run()
+    assert not at.exception
+    gorunen = " ".join(str(e.value) for e in [*at.markdown, *at.caption, *at.text, *at.info])
+    assert "PILOT_ONERI_METNI" not in gorunen
+    assert "kör etiketleme bitene kadar" in gorunen
+
+    for b in orneklem[1:]:
+        kor.kaydet(cikti, b, {}, "Mehmet Güneş", IDS)  # 3/3: pilot bitti
+    at = _sayfa("ekranlar/etiket_onayi.py").run()
+    assert "PILOT_ONERI_METNI" in " ".join(str(m.value) for m in at.markdown)
+
+
+def test_r_etk_01_pilot_kilidi_mantigi(veri):
+    data = veri / "data"
+    orneklem = kor.orneklem_oku(data / "labels/pilot/orneklem.jsonl")
+    assert kor.pilot_kilitli(data)  # hiç kör etiket yok
+    a = kor.KorYollar(data).cikti("A")
+    for b in orneklem:
+        kor.kaydet(a, b, {}, "A", IDS)
+    assert not kor.pilot_kilitli(data)
+    kor.kaydet(kor.KorYollar(data).cikti("B"), orneklem[0], {}, "B", IDS)  # ikinci etiketleyici başladı
+    assert kor.pilot_kilitli(data)
+
+
+def test_r_etk_01_filtre_degisince_kaydedilmemis_secim_korunur(veri):
+    """Bulgu 2: arama kutusu seçilmiş ama kaydedilmemiş maddeyi listeden düşürüyordu."""
+    at = _sayfa("ekranlar/kor_etiketleme.py")
+    at.session_state["_ad"] = "Mehmet Güneş"
+    at.run()
+    pid = _birim(1, sayfa=1)["paragraf_id"]
+    at.multiselect(key=f"secili-{pid}").set_value(["TSRS2-YON-06a"]).run()
+    at.radio(key=f"seviye-{pid}-TSRS2-YON-06a").set_value("2").run()
+    at.text_input(key="ara").input("emisyon").run()
+    assert "TSRS2-YON-06a" in at.multiselect(key=f"secili-{pid}").value
+    at.button(key=f"kaydet-{pid}").click().run()
+    rows = kor.yapilanlar(veri / "data/labels/blind/mehmet-gunes/pilot_v0.csv")[pid]
+    assert [r["madde_id"] for r in rows] == ["TSRS2-YON-06a"]
+
+
+def test_madde_aramasi_turkce_buyuk_harf():
+    """Bulgu 3: 'iklim' araması 'İklim…' başlığını bulmuyordu (str.lower)."""
+    from review_ui.logic import Paths, catalog_lookup
+
+    katalog = catalog_lookup(Paths(ROOT / "data"))
+    bulunan = kor.madde_filtrele(katalog, "Tümü", "Tümü", "iklimle ilgili risk")
+    assert "TSRS2-YON-06a" in bulunan
+    assert kor.madde_filtrele(katalog, "Tümü", "Tümü", "İKLİMLE İLGİLİ RİSK") == bulunan
+
+
+def test_r_etk_01_ilerleme_sahipsiz_satiri_saymaz(tmp_path):
+    """Bulgu 4: örneklem değişince eski satırlar ilerlemeyi 1'in üstüne çıkarıyordu."""
+    orneklem = [_birim(i) for i in range(1, 3)]
+    yapilan = {orneklem[0]["paragraf_id"]: [{}], "eski-paragraf": [{}]}
+    assert kor.ilerleme(orneklem, yapilan) == (1, 2, ["eski-paragraf"])
+
+
+def test_r_etk_01_orneklem_degisirse_ekran_durur(veri):
+    data = veri / "data"
+    at = _sayfa("ekranlar/kor_etiketleme.py")
+    at.session_state["_ad"] = "Mehmet Güneş"
+    at.run()
+    pid = _birim(1, sayfa=1)["paragraf_id"]
+    at.button(key=f"kaydet-{pid}").click().run()
+    assert (data / "labels/blind/mehmet-gunes/pilot_v0.orneklem.sha256").exists()
+
+    yol = data / "labels/pilot/orneklem.jsonl"
+    yol.write_text(yol.read_text(encoding="utf-8") + "\n" + json.dumps(_birim(9)), encoding="utf-8")
+    at = _sayfa("ekranlar/kor_etiketleme.py")
+    at.session_state["_ad"] = "Mehmet Güneş"
+    at.run()
+    assert not at.exception
+    assert any("örneklem değişmiş" in e.value for e in at.error)
+    assert not at.button  # kayıt yapılamaz
+
+
+def test_kayit_dosya_kilitliyse_anlasilir_hata_verir(tmp_path, monkeypatch):
+    """Bulgu 5: Excel dosyayı açık tutunca Windows'ta PermissionError yığını görünüyordu."""
+    monkeypatch.setattr(kor.ortak, "_BEKLEME", 0)
+
+    def kilitli(self, hedef):
+        raise PermissionError(32, "The process cannot access the file")
+
+    monkeypatch.setattr(Path, "replace", kilitli)
+    cikti = tmp_path / "blind" / "pilot_v0.csv"
+    with pytest.raises(ValueError, match="başka bir programda açık"):
+        kor.kaydet(cikti, _birim(1), {}, "M", IDS)
+    with pytest.raises(ValueError, match="başka bir programda açık"):
+        qa.kaydet(tmp_path / "qa.csv", "r", 1, set(), "M")
+    assert not list(tmp_path.rglob("*.tmp"))
+
+
+def test_bom_ile_kaydedilmis_csv_okunur(tmp_path):
+    from review_ui.logic import read_rows
+
+    p = tmp_path / "x.csv"
+    p.write_bytes("﻿etiket_id,paragraf_id\nx,p\n".encode())
+    assert read_rows(p) == [{"etiket_id": "x", "paragraf_id": "p"}]
+
+
+def test_r_pdf_02_birimsiz_sayfa_da_orneklemeye_girer():
+    """Bulgu 6: OCR gereken ya da metni kaçan sayfalar (birimsiz) hiç seçilmiyordu."""
+    spec = importlib.util.spec_from_file_location(
+        "qa_report", ROOT / ".claude/skills/pdf-extract/scripts/qa_report.py"
+    )
+    qa_report = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(qa_report)
+    birimler = [_birim(1, sayfa=s) for s in (1, 2)]
+    secilen = qa.kontrol_sayfalari(birimler, 5, 43, sayfa_sayisi=40)
+    assert secilen == qa_report.analyze(birimler, 5, 43, page_count=40)["elle_kontrol_sayfalari"]
+    assert set(secilen) - {1, 2}
+
+
+def test_r_pdf_02_sayfa_sayisi_manifestten(tmp_path):
+    m = tmp_path / "KAYNAKLAR.csv"
+    m.write_text("rapor_id,sayfa\nsirket-a-2025,61\nsirket-b-2025,\n", encoding="utf-8")
+    assert qa.sayfa_sayisi("sirket-a-2025", m, None, []) == 61
+    assert qa.sayfa_sayisi("sirket-b-2025", m, None, [_birim(1, sayfa=7)]) == 7
+
+
+def test_r_pdf_02_birimsiz_sayfa_ekranda_gosterilir(veri):
+    data = veri / "data"
+    (data / "raw/public").mkdir(parents=True)
+    (data / "raw/public/KAYNAKLAR.csv").write_text("rapor_id,sayfa\nsirket-ornek-2025,3\n", encoding="utf-8")
+    yol = data / "labels/pilot/birimler/sirket-ornek-2025.jsonl"
+    yol.write_text(json.dumps(_birim(1, sayfa=1), ensure_ascii=False), encoding="utf-8")
+    at = _sayfa("ekranlar/cikarim_kontrolu.py")
+    at.session_state["_ad"] = "Mehmet Güneş"
+    at.run()
+    assert not at.exception
+    sayfalar = qa.kontrol_sayfalari([_birim(1, sayfa=1)], sayfa_sayisi=3)
+    assert sayfalar == [1, 2, 3]
+    at.sidebar.radio(key="qa_sayfa").set_value(1).run()  # s.2: birimi yok
+    assert any("çıkarılan birim yok" in w.value for w in at.warning)
+
+
+def test_r_pdf_02_ilerleme_yalnizca_secili_sayfalari_sayar(veri):
+    cikti = veri / "deney/extraction-qa-elle.csv"
+    qa.kaydet(cikti, "sirket-eski-2024", 9, set(), "Mehmet")  # artık örneklemde olmayan rapor
+    at = _sayfa("ekranlar/cikarim_kontrolu.py")
+    at.session_state["_ad"] = "Mehmet Güneş"
+    at.run()
+    assert not at.exception
+    assert any("0 / 3" in str(p.text) for p in at.sidebar.get("progress"))
+
+
+def test_r_pdf_02_iki_kisinin_kontrolu_birbirini_silmez(tmp_path):
+    cikti = tmp_path / "qa.csv"
+    qa.kaydet(cikti, "r", 3, set(), "Mehmet")
+    qa.kaydet(cikti, "r", 3, {"kirik_tablo"}, "Zemzem", "kaymış")
+    assert {r["kontrol_eden"] for r in qa.kayitlar(cikti)} == {"Mehmet", "Zemzem"}
+
+
+def test_r_etk_01_seviye_secilmeden_kaydedilmez(tmp_path):
+    """Bulgu 9: radyo '1' seçili açılıyordu; dokunmadan kaydeden kişi farkında olmadan 1 veriyordu."""
+    with pytest.raises(ValueError, match="karşılama düzeyini seç"):
+        kor.kaydet(tmp_path / "c.csv", _birim(1), {"TSRS2-YON-06a": None}, "M", IDS)
+
+
+def test_kor_ekran_ascii_karsiligi_olmayan_ad_cokmez(veri):
+    at = _sayfa("ekranlar/kor_etiketleme.py")
+    at.session_state["_ad"] = "..."
+    at.run()
+    assert not at.exception
+    assert any("harf" in e.value for e in at.error)
+
+
+def test_label_propose_skill_ayni_orneklem_yolunu_kullanir():
+    """Bulgu 7 / C-02: skill ile kör ekran farklı örneklem dosyalarını kullanıyordu."""
+    skill = (ROOT / ".claude/skills/label-propose/SKILL.md").read_text(encoding="utf-8")
+    yol = kor.KorYollar(Path("data")).orneklem.as_posix()
+    assert yol in skill
+    assert "pilot-orneklem.jsonl" not in skill

@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Çıkarım kalite raporu: şüpheli birimleri işaretler ve elle kontrol örneklemi seçer (R-PDF-02, S04).
 
-    python .claude/skills/pdf-extract/scripts/qa_report.py data/processed/karel-2025/paragraphs.jsonl --sayfa 20 --seed 43
+    python .claude/skills/pdf-extract/scripts/qa_report.py data/processed/karel-2025/paragraphs.jsonl --sayfa 20 --seed 43 --sayfa-sayisi 61
 
 Otomatik işaretler (her biri bir hata türü; tezdeki çıkarım hata tablosuna girer):
 - bozuk_sayi     "12 450 ." gibi ayrılmış binlik/ondalık (tablo okuyucu hatası)
@@ -33,7 +33,9 @@ CHECKS = {
 }
 
 
-def analyze(units: list[dict], n_pages: int, seed: int) -> dict:
+def analyze(units: list[dict], n_pages: int, seed: int, page_count: int | None = None) -> dict:
+    """`page_count` verilirse elle kontrol sayfaları bütün sayfalardan seçilir; birim üretmeyen
+    sayfalar (görüntü, metni kaçan) da örnekleme girer. Onay arayüzü aynı seçimi yapar."""
     flags = Counter()
     flagged = []
     for u in units:
@@ -48,7 +50,7 @@ def analyze(units: list[dict], n_pages: int, seed: int) -> dict:
                     "metin": u["metin"][:160],
                 }
             )
-    pages = sorted({u["sayfa"] for u in units})
+    pages = list(range(1, page_count + 1)) if page_count else sorted({u["sayfa"] for u in units})
     sample = sorted(random.Random(seed).sample(pages, min(n_pages, len(pages))))
     return {
         "birim": len(units),
@@ -89,10 +91,15 @@ def main(argv: list[str]) -> int:
     ap.add_argument("paragraphs", type=Path)
     ap.add_argument("--sayfa", type=int, default=20)
     ap.add_argument("--seed", type=int, default=43)
+    ap.add_argument(
+        "--sayfa-sayisi",
+        type=int,
+        help="PDF sayfa sayısı (manifestteki `sayfa`); birimsiz sayfalar da seçilir",
+    )
     args = ap.parse_args(argv)
     with args.paragraphs.open(encoding="utf-8") as fh:
         units = [json.loads(x) for x in fh if x.strip()]
-    print(to_markdown(analyze(units, args.sayfa, args.seed), args.paragraphs))
+    print(to_markdown(analyze(units, args.sayfa, args.seed, args.sayfa_sayisi), args.paragraphs))
     return 0
 
 

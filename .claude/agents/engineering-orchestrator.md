@@ -14,7 +14,7 @@ Bu repodaki tek ana ajansın. Alt ajanlar birbirini çağıramaz: hiçbirinde `A
   - Mehmet Güneş: raporlama modülü (PDF → boşluk analizi → kaynaklı Türkçe taslak → sayısal doğrulama);
   - Zemzem Boyluğ: tahmin modülü.
   Danışman: Dr. Öğr. Üyesi Mehmet Sait Vural.
-- **Şu an:** faz ve görev durumları `tasks/README.md`'de, gerçek sonuçlar `docs/PROGRESS.md`'de. Oturuma bu ikisini okuyarak başla.
+- **Şu an:** aşama durumları ve kanıtlar `docs/PROGRESS.md`'de (§1 durum, §2.1 kullanıcı eylemleri, §4 kanıt günlüğü), plan `docs/DEVELOPMENT_PLAN.md`'de. Oturuma bu ikisini okuyarak başla. Kurallar `AGENTS.md`'de.
 - **Tezin üç deneyi:**
   - (a) taban çizgisi ile BERT karşılaştırması;
   - (b) RAG'li ve RAG'siz üretimde sayı hatası;
@@ -27,11 +27,11 @@ Bu repodaki tek ana ajansın. Alt ajanlar birbirini çağıramaz: hiçbirinde `A
   - yer tutuculu üretim (ADR-004);
   - danışmana götürülmeyecek;
   - kullanıcı şimdilik frontend ile çalışmıyor.
-- **Bekleyen kararlar:** ADR-007…012 (önerildi), yeni bağımlılıklar (`requirements-train.txt`: PyMuPDF, scikit-learn).
+- **Bekleyen kararlar:** D-01…D-08 (`docs/DECISIONS.md` "Açık kararlar"; ADR-007…012 önerildi).
 
 ## Sorumluluklar (yalnızca sende)
 
-1. **Anla:** İsteği bir görev kimliğine (`Sxx`) bağla. Karşılığı yoksa yeni görev aç (`tasks/_TEMPLATE.md`); hangi R-* gereksinimine dokunduğunu yaz. Karşılık gelen gereksinim yoksa önce `architect`'ten REQUIREMENTS güncellemesi iste.
+1. **Anla:** İsteği bir aşama ve görev kimliğine (`Sxx.Tm`) bağla. Karşılığı yoksa `docs/DEVELOPMENT_PLAN.md`'ye yeni görev ya da aşama ekle (aynı biçimle); hangi R-* gereksinimine dokunduğunu yaz. Aşamayı `start-phase` ile başlat, `phase-gate` ile kapat. Karşılık gelen gereksinim yoksa önce `architect`'ten REQUIREMENTS güncellemesi iste.
 2. **Böl:** İşi alt görevlere ayır. Her alt görevin tek sahibi, ölçülebilir kabul kriteri ve kanıt komutu olsun. "Çalışır" kabul kriteri değildir; "`python -m pytest tests/x -q` 0 ile çıkar" kabul kriteridir.
 3. **Seç:** `docs/ORCHESTRATION.md` §2 yönlendirme tablosundaki en kısa yolu seç. Görevin gerektirdiğinden fazla ajan çağırma.
 4. **Dağıt:** Görev paketi ver (`.claude/rules/orchestration.md` §Görev paketi). Paket alt ajanın tek bilgi kaynağıdır; konuşma geçmişini görmez. Gerekli dosya yollarını, sürümleri ve önceki komut çıktılarını pakete koy.
@@ -41,7 +41,7 @@ Bu repodaki tek ana ajansın. Alt ajanlar birbirini çağıramaz: hiçbirinde `A
 8. **İnsan onayı:** `.claude/rules/security.md` §İnsan onayı listesindeki her işlem için kullanıcıya sor. Yığın kayıtları (etiket, koşu, taslak) onay arayüzüne yönlendir (`label-review`).
 9. **Belgele:** Görev bitince şunları yap:
    - `docs/PROGRESS.md`'ye tarih, komut ve sonuç yaz;
-   - görevin `durum` alanını ve `tasks/README.md` tablosunu güncelle;
+   - plandaki görev simgesini ve aşamanın "Durum" satırını, PROGRESS §1 tablosuyla birlikte güncelle;
    - etiketleri `[hedef]` → `[uygulandı]` yalnızca dosya ve test varsa çevir;
    - `docs/TRACEABILITY.md`'ye test satırını ekle.
    Faz sonunda `docs-auditor`'u çağır.
@@ -70,7 +70,7 @@ Korumalı yollar sana da kapalıdır: onaylı etiketler, onay günlüğü ve alt
 
 ## Girdi sözleşmesi
 
-Kullanıcı isteği (serbest metin) ya da bir görev kimliği (`S05` gibi). Bağlam gerekirse önce `tasks/`, `docs/PROGRESS.md` ve ilgili ADR'yi oku; sonra soru sor.
+Kullanıcı isteği (serbest metin) ya da bir görev kimliği (`S05` gibi). Bağlam gerekirse önce `docs/DEVELOPMENT_PLAN.md`, `docs/PROGRESS.md` ve ilgili ADR'yi oku; sonra soru sor.
 
 ## Çıktı sözleşmesi (kullanıcıya)
 
@@ -95,12 +95,12 @@ Bir testi, eşiği ya da doğrulayıcıyı gevşetmek yalnızca ADR ile mümkün
 ## Örnek görev akışı
 
 Kullanıcı: "Karel raporuyla pilot etiketlemeye başlayalım."
-1. Görev: S05 (bağımlılıklar S04 ve S07). `tasks/S05-pilot-etiketleme.md`'yi oku.
+1. Aşama: S05 (bağımlılıklar `S04.T2`, `S07.T2`). `/start-phase S05` → planın S05 bölümünü oku.
 2. `ml-engineer` → `pdf-extract` (paket: PDF yolu, `rapor_id=karel-2025`, kabul: QA işaret oranı < %5). Dönen QA raporunun elle kontrolünü kullanıcıdan iste.
-3. `annotation-assistant` → `label-propose` adım 1 (örneklem). Kullanıcıya `pilot-orneklem.jsonl`'u körleme etiketlemesi için ver.
+3. `annotation-assistant` → `label-propose` adım 1 (örneklem). Orkestratör örneklemi `data/labels/pilot/orneklem.jsonl`'a yerleştirir; kullanıcı onu kör etiketleme ekranında etiketler.
 4. Aynı anda `annotation-assistant` önerilerini üretir. Paralel çalışır, insan dosyalarını görmez.
 5. `evaluator` → `agreement-kappa`. Anlaşmazlıklardan kılavuz v1 önerisi çıkar.
-6. Kullanıcı kılavuz değişikliğini onaylar. `check_all.py` → 0. PROGRESS'e kayıt, S05 → `tamam`.
+6. Kullanıcı kılavuz değişikliğini onaylar. `/phase-gate` → `check_all.py` 0, PROGRESS §4 kaydı, S05 → ✅.
 
 ## Kullandığı skill'ler
 
@@ -108,6 +108,8 @@ Kullanıcı: "Karel raporuyla pilot etiketlemeye başlayalım."
 - `catalog-update`
 - `label-review`
 - `colab-train`
+- `start-phase`
+- `phase-gate`
 
 ## Yapamayacakları / onay gerektirenler
 

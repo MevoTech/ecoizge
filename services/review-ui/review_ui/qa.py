@@ -8,13 +8,14 @@ Sayfa seçimi `pdf-extract` skill'indeki `qa_report.analyze` ile aynıdır (test
 
 from __future__ import annotations
 
-import csv
 import json
 import os
 import random
 from collections import Counter
 from datetime import date
 from pathlib import Path
+
+from review_ui.ortak import atomik_csv_yaz, csv_oku
 
 HATA_TURLERI = {
     "eksik_metin": "Eksik metin (PDF'te olup çıkarımda olmayan)",
@@ -36,9 +37,26 @@ def birimler_oku(path: Path) -> list[dict]:
         return [json.loads(line) for line in fh if line.strip()]
 
 
-def kontrol_sayfalari(birimler: list[dict], n: int = SAYFA_SAYISI, seed: int = SEED) -> list[int]:
-    pages = sorted({u["sayfa"] for u in birimler})
+def kontrol_sayfalari(
+    birimler: list[dict], n: int = SAYFA_SAYISI, seed: int = SEED, sayfa_sayisi: int | None = None
+) -> list[int]:
+    """Elle kontrol edilecek sayfalar. `sayfa_sayisi` verilirse birim üretmeyen sayfalar da
+    (görüntü, metni kaçan sayfa) seçilebilir; yoksa yalnızca birimi olan sayfalar."""
+    pages = list(range(1, sayfa_sayisi + 1)) if sayfa_sayisi else sorted({u["sayfa"] for u in birimler})
     return sorted(random.Random(seed).sample(pages, min(n, len(pages))))
+
+
+def sayfa_sayisi(rapor_id: str, manifest: Path, pdf: Path | None, birimler: list[dict]) -> int:
+    """Raporun sayfa sayısı: derlem manifesti > PDF > birimlerdeki en büyük sayfa."""
+    for r in csv_oku(manifest):
+        if r.get("rapor_id") == rapor_id and (r.get("sayfa") or "").isdigit():
+            return int(r["sayfa"])
+    if pdf is not None:
+        import fitz
+
+        with fitz.open(pdf) as doc:
+            return doc.page_count
+    return max((u["sayfa"] for u in birimler), default=0)
 
 
 def sayfa_birimleri(birimler: list[dict], sayfa: int) -> list[dict]:
@@ -66,14 +84,13 @@ def sayfa_goruntusu(pdf: Path, sayfa: int, dpi: int = 110) -> bytes:
     import fitz  # PyMuPDF; yalnızca bu ekranda gerekir
 
     with fitz.open(pdf) as doc:
+        if not 1 <= sayfa <= doc.page_count:
+            raise ValueError(f"PDF'te {doc.page_count} sayfa var, {sayfa}. sayfa yok")
         return doc[sayfa - 1].get_pixmap(dpi=dpi).tobytes("png")
 
 
 def kayitlar(cikti: Path) -> list[dict[str, str]]:
-    if not cikti.exists():
-        return []
-    with cikti.open(encoding="utf-8", newline="") as fh:
-        return list(csv.DictReader(fh))
+    return csv_oku(cikti)
 
 
 def kaydet(
@@ -85,7 +102,8 @@ def kaydet(
     not_: str = "",
     bugun: date | None = None,
 ) -> dict[str, str]:
-    """Bir sayfanın kontrolünü yazar; aynı sayfanın önceki kaydını değiştirir."""
+    """Bir sayfanın kontrolünü yazar; aynı kişinin aynı sayfadaki önceki kaydını değiştirir.
+    Farklı kişilerin kontrolleri ayrı satırlardır (iki kontrol eden karşılaştırılabilir)."""
     if not kontrol_eden.strip():
         raise ValueError("kontrol eden adı zorunlu")
     bilinmeyen = hatalar - HATA_TURLERI.keys()
@@ -102,14 +120,9 @@ def kaydet(
         "kontrol_eden": kontrol_eden.strip(),
         "tarih": (bugun or date.today()).isoformat(),
     }
-    kalan = [r for r in kayitlar(cikti) if (r["rapor_id"], r["sayfa"]) != (rapor_id, str(sayfa))]
-    cikti.parent.mkdir(parents=True, exist_ok=True)
-    gecici = cikti.with_suffix(".tmp")
-    with gecici.open("w", encoding="utf-8", newline="") as fh:
-        w = csv.DictWriter(fh, fieldnames=QA_HEADER)
-        w.writeheader()
-        w.writerows(kalan + [satir])
-    gecici.replace(cikti)
+    anahtar = (rapor_id, str(sayfa), satir["kontrol_eden"])
+    kalan = [r for r in kayitlar(cikti) if (r["rapor_id"], r["sayfa"], r["kontrol_eden"]) != anahtar]
+    atomik_csv_yaz(cikti, QA_HEADER, kalan + [satir])
     return satir
 
 

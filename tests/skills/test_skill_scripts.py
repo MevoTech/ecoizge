@@ -62,7 +62,8 @@ def test_sample_pilot_yinelenen_metni_bir_kez_alir():
     sp = load("label-propose", "sample_pilot")
     paras = _paragraphs(n_reports=1, per_report=4)
     kopya = paras[0] | {"paragraf_id": "kopya", "metin": "  " + paras[0]["metin"].replace(" ", "  ") + "\n"}
-    assert [u["paragraf_id"] for u in sp.filtrele(paras + [kopya], 40, 1500)].count("kopya") == 0
+    kalan = [u["paragraf_id"] for u in sp.filtrele(paras + [kopya], 40, 1500)]
+    assert len({"kopya", paras[0]["paragraf_id"]} & set(kalan)) == 1
 
 
 # ---------- label-propose ----------
@@ -103,6 +104,45 @@ def test_sample_pilot_split_blind_and_reproducible(tmp_path):
     )
     first = json.loads(out.read_text(encoding="utf-8").splitlines()[0])
     assert "secim" not in first and "aday_maddeler" not in first  # körleme
+
+
+def test_sample_pilot_var_olan_orneklemin_uzerine_yazmaz(tmp_path, capsys):
+    """code-reviewer 2026-10-23 bulgu 4: örneklem yeniden üretilince insan etiketleri sahipsiz kalıyordu."""
+    sp = load("label-propose", "sample_pilot")
+    src = tmp_path / "p.jsonl"
+    src.write_text("\n".join(json.dumps(p, ensure_ascii=False) for p in _paragraphs()), encoding="utf-8")
+    out, hints = tmp_path / "o.jsonl", tmp_path / "ayri" / "dizin" / "h.json"  # bulgu 16: üst dizin yok
+    args = [str(src), "--catalog", str(CATALOG), "--aday", "6", "--rastgele", "4", "--out", str(out)]
+    assert sp.main([*args, "--hints", str(hints)]) == 0
+    assert hints.exists()
+    assert "->" in capsys.readouterr().out  # bulgu 15: cp1254 konsolda "→" UnicodeEncodeError veriyordu
+    once = out.read_bytes()
+    assert sp.main([*args, "--hints", str(hints), "--seed", "7"]) == 1
+    assert out.read_bytes() == once
+    assert sp.main([*args, "--hints", str(hints), "--seed", "7", "--force"]) == 0
+    assert out.read_bytes() != once
+    assert not list(tmp_path.rglob("*.tmp"))
+
+
+def test_sample_pilot_dosya_sirasindan_bagimsiz():
+    """2026-10-23: aynı seed ile örneklem, rapor dosyalarının komut satırındaki sırasına göre değişiyordu."""
+    sp = load("label-propose", "sample_pilot")
+    items = sp.item_tokens(CATALOG)
+    paras = _paragraphs()
+    a, _ = sp.sample(paras, items, n_aday=6, n_rastgele=4, seed=43)
+    b, _ = sp.sample(list(reversed(paras)), items, n_aday=6, n_rastgele=4, seed=43)
+    assert [r["paragraf_id"] for r in a] == [r["paragraf_id"] for r in b]
+    kopya = paras[0] | {"paragraf_id": "zz-kopya"}  # aynı metin: hangisinin kalacağı da sıraya bağlı olmamalı
+    ileri = [u["paragraf_id"] for u in sp.filtrele([kopya, *paras], 40, 1500)]
+    geri = [u["paragraf_id"] for u in sp.filtrele([*reversed(paras), kopya], 40, 1500)]
+    assert ileri == geri and "zz-kopya" not in ileri
+
+
+def test_sample_pilot_sapkali_harfleri_bolmez():
+    """Bulgu 17: "kâr" sözcüğü "k" ve "r" diye bölünüp düşüyordu."""
+    sp = load("label-propose", "sample_pilot")
+    assert "kâr" in sp.tokens("Net kâr arttı")
+    assert sp.tokens("Kâr ve zarar") >= {"kâr", "zarar"}
 
 
 def test_r_etk_01_random_part_never_reuses_candidates():

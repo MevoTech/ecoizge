@@ -75,7 +75,7 @@ def tr_lower(text: str) -> str:
 
 def tokens(text: str) -> set[str]:
     """Türkçe küçük harf + durak sözcük çıkarma + 5 karakterlik kök yaklaşımı."""
-    words = re.findall(r"[a-zçğıöşü0-9]+", tr_lower(text))
+    words = re.findall(r"[a-zçğıöşüâîû0-9]+", tr_lower(text))
     return {w[:5] for w in words if len(w) > 2 and w not in STOP}
 
 
@@ -84,7 +84,9 @@ def filtrele(paragraphs: list[dict], min_len: int, max_len: int) -> list[dict]:
     Uzun birimler hem etiketlemesi zor hem de çıkarım hatası adayıdır (QA `cok_uzun`)."""
     gorulen: set[str] = set()
     out = []
-    for u in paragraphs:
+    for u in sorted(
+        paragraphs, key=lambda x: x["paragraf_id"]
+    ):  # hangi kopyanın kalacağı sıraya bağlı olmasın
         anahtar = " ".join(tr_lower(u["metin"]).split())
         if min_len <= len(u["metin"]) <= max_len and anahtar not in gorulen:
             gorulen.add(anahtar)  # aynı tablo başlığı ya da tekrar eden kalıp metin bir kez girer
@@ -116,7 +118,8 @@ def score(par: set[str], item: set[str]) -> float:
 
 def sample(paragraphs: list[dict], items: dict[str, set[str]], n_aday: int, n_rastgele: int, seed: int):
     scored = []
-    for u in paragraphs:
+    # Girdi sırası (komut satırındaki dosya sırası) örneklemi değiştirmesin: aynı seed, aynı örneklem.
+    for u in sorted(paragraphs, key=lambda x: x["paragraf_id"]):
         pt = tokens(u["metin"])
         ranked = sorted(((score(pt, it), mid) for mid, it in items.items()), reverse=True)
         scored.append((ranked[0][0] if ranked else 0.0, u, [m for _, m in ranked[:3]]))
@@ -154,23 +157,35 @@ def main(argv: list[str]) -> int:
     ap.add_argument("--max-len", type=int, default=1500)
     ap.add_argument("--out", type=Path, required=True)
     ap.add_argument("--hints", type=Path, required=True)
+    ap.add_argument("--force", action="store_true", help="var olan örneklemin üzerine yaz")
     args = ap.parse_args(argv)
+    if args.out.exists() and not args.force:
+        print(
+            f"HATA: {args.out} zaten var. Etiketleme başladıysa örneklemi değiştirmek etiketleri sahipsiz bırakır; "
+            "bilerek yeniden üretmek için --force ver.",
+            file=sys.stderr,
+        )
+        return 1
     paras = load_paragraphs(args.paragraphs, args.min_len, args.max_len)
     rows, hints = sample(paras, item_tokens(args.catalog), args.aday, args.rastgele, args.seed)
-    args.out.parent.mkdir(parents=True, exist_ok=True)
-    with args.out.open("w", encoding="utf-8") as fh:
-        for r in rows:
-            fh.write(json.dumps({k: v for k, v in r.items() if k != "secim"}, ensure_ascii=False) + "\n")
-    args.hints.write_text(
-        json.dumps(
-            {r["paragraf_id"]: hints[r["paragraf_id"]] | {"secim": r["secim"]} for r in rows},
-            ensure_ascii=False,
-            indent=1,
-        ),
-        encoding="utf-8",
+    ornek = "".join(
+        json.dumps({k: v for k, v in r.items() if k != "secim"}, ensure_ascii=False) + "\n" for r in rows
     )
+    ipucu = json.dumps(
+        {r["paragraf_id"]: hints[r["paragraf_id"]] | {"secim": r["secim"]} for r in rows},
+        ensure_ascii=False,
+        indent=1,
+    )
+    for yol, icerik in (
+        (args.hints, ipucu),
+        (args.out, ornek),
+    ):  # örneklem en son: yarım kalırsa eskisi durur
+        yol.parent.mkdir(parents=True, exist_ok=True)
+        gecici = yol.with_suffix(yol.suffix + ".tmp")
+        gecici.write_text(icerik, encoding="utf-8")
+        gecici.replace(yol)
     n_a = sum(r["secim"] == "aday" for r in rows)
-    print(f"{len(rows)} paragraf ({n_a} aday, {len(rows) - n_a} rastgele) / havuz {len(paras)} → {args.out}")
+    print(f"{len(rows)} paragraf ({n_a} aday, {len(rows) - n_a} rastgele) / havuz {len(paras)} -> {args.out}")
     return 0
 
 

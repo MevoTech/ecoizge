@@ -5,12 +5,12 @@ Gereksinim → görev → test → durum. Kimlikler `docs/REQUIREMENTS.md`'den; 
 | Gereksinim | Görev(ler) | Test | Durum |
 |---|---|---|---|
 | R-KAT-01 | S02 | `tests/tools/test_validate_data.py`, `tests/skills/test_skill_scripts.py` (katalog farkı, v1 üst madde) | kısmi: doğrulayıcı ve fark aracı uygulandı, katalog v1 bekliyor |
-| R-KAT-02 | S06 | — | hedef |
+| R-KAT-02 | S06, S25 | — | hedef |
 | R-PDF-01 | S03, S04 | `tests/pipelines/test_extract.py` | kısmi: çıkarım uygulandı (sentetik PDF), gerçek rapor bekliyor; CI'da PyMuPDF onayına kadar atlanır |
 | R-PDF-02 | S04 | `tests/skills/test_skill_scripts.py` (qa_report) | kısmi: otomatik QA uygulandı, elle kontrol bekliyor |
 | R-ETK-01 | S05 | `tests/tools/test_validate_data.py`, `tests/tools/test_kappa.py`, `tests/skills/test_skill_scripts.py` (örneklem, öneri dönüştürücü) | kısmi: araçlar uygulandı, etiket yok |
 | R-ETK-02 | S12 | `tests/tools/test_gold_manifest.py` | kısmi: araç uygulandı, küme yok |
-| R-GAP-01 | S14 | — | hedef |
+| R-GAP-01 | S14, S26 | — | hedef |
 | R-GAP-02 | S14, S16, S22 | `tests/skills/test_skill_scripts.py` (baseline) | kısmi: taban çizgisi sentetik veride testli; CI'da scikit-learn onayına kadar atlanır |
 | R-GAP-03 | S02, S14 | `services/report-service/tests/test_coverage.py` | uygulandı (unsur kapsama); katalog v1 alt maddeleri bekliyor |
 | R-GAP-04 | S08, S16 | — | hedef |
@@ -34,7 +34,7 @@ Gereksinim → görev → test → durum. Kimlikler `docs/REQUIREMENTS.md`'den; 
 | R-SEC-03 | S08, S17 | — | hedef |
 | R-SEC-04 | S09, S10 | — | hedef |
 | R-REP-01 | S13, S16, S24 | `tests/skills/test_skill_scripts.py` (run_record, Colab şablonu) | kısmi: kayıt aracı ve şablon uygulandı, gerçek koşu yok |
-| R-HIL-01 | S07 | `services/review-ui/tests/test_review_logic.py`, `tests/skills/test_skill_scripts.py` (review_status) | kısmi: etiket kuyruğu ve durum aracı uygulandı |
-| R-INT-01 | S06, S11, S20 | `tests/contracts/test_forecast_record.py` | kısmi: şema uygulandı |
+| R-HIL-01 | S07, S26 | `services/review-ui/tests/test_review_logic.py`, `services/review-ui/tests/test_kor_qa.py`, `tests/skills/test_skill_scripts.py` (review_status) | kısmi: etiket kuyruğu ve durum aracı uygulandı |
+| R-INT-01 | S06, S11, S20, S27 | `tests/contracts/test_forecast_record.py` | kısmi: şema uygulandı |
 | R-EXP-01 | S21 | — | hedef |
 | R-AGT-01 | S01 | `tests/tools/test_check_consistency.py`, `tests/hooks/test_guard.py` | kısmi: mekanik denetim uygulandı, canlı yönlendirme bekliyor (S01) |

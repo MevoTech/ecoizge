@@ -6,7 +6,7 @@ Kaynak:
 - Geliştirme 2 §5 (güvenlik);
 - `docs/analysis/00_ANALIZ_RAPORU.md` bulguları (B1–B20).
 
-Kimlikler yalnızca burada tanımlanır. Her kimlik en az bir `tasks/Sxx` dosyasına ve `docs/TRACEABILITY.md`'ye bağlıdır; denetim: `python tools/check_consistency.py`.
+Kimlikler yalnızca burada tanımlanır. Her kimlik `docs/DEVELOPMENT_PLAN.md`'de en az bir aşamanın "Gereksinimler" satırına ve `docs/TRACEABILITY.md`'ye bağlıdır; denetim: `python tools/check_consistency.py`.
 
 | Kimlik | Gereksinim | Kaynak |
 |---|---|---|

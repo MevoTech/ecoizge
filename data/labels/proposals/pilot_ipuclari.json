@@ -53,21 +53,21 @@
   ],
   "secim": "aday"
  },
- "sirket-akbank-2025-p020-23": {
-  "skor": 0.317,
+ "sirket-akbank-2025-p041-06": {
+  "skor": 0.114,
   "aday_maddeler": [
-   "TSRS2-STR-16d",
-   "TSRS2-STR-16a",
-   "TSRS2-STR-13a"
+   "VSME-B1-24e",
+   "VSME-C5-60",
+   "TSRS2-STR-12"
   ],
   "secim": "rastgele"
  },
- "sirket-derimod-2025-p057-01": {
-  "skor": 0.29,
+ "sirket-akbank-2025-p027-14": {
+  "skor": 0.267,
   "aday_maddeler": [
-   "TSRS2-MET-29a-i",
-   "TSRS2-MET-36a-b",
-   "VSME-B3-31"
+   "TSRS2-STR-14a-iii",
+   "TSRS2-STR-14b",
+   "TSRS2-MET-36e"
   ],
   "secim": "rastgele"
  },
@@ -107,12 +107,12 @@
   ],
   "secim": "aday"
  },
- "sirket-derimod-2025-p012-05": {
-  "skor": 0.209,
+ "sirket-akbank-2025-p009-01": {
+  "skor": 0.373,
   "aday_maddeler": [
-   "TSRS2-STR-12",
-   "TSRS2-MET-32",
-   "TSRS2-YON-06a-iv"
+   "TSRS2-YON-06a",
+   "VSME-C2-48",
+   "TSRS2-STR-22b-iii"
   ],
   "secim": "rastgele"
  },
@@ -134,12 +134,12 @@
   ],
   "secim": "aday"
  },
- "sirket-derimod-2025-p027-02": {
-  "skor": 0.163,
+ "sirket-akbank-2025-p012-09": {
+  "skor": 0.231,
   "aday_maddeler": [
-   "VSME-C9-65",
-   "TSRS2-STR-14a-iv",
-   "TSRS2-STR-14b"
+   "VSME-C2-48",
+   "VSME-B2-26",
+   "TSRS2-MET-36c"
   ],
   "secim": "rastgele"
  },
@@ -251,12 +251,12 @@
   ],
   "secim": "aday"
  },
- "sirket-akbank-2025-p043-02": {
-  "skor": 0.25,
+ "sirket-derimod-2025-p054-01": {
+  "skor": 0.169,
   "aday_maddeler": [
-   "TSRS2-STR-22b-iii",
-   "TSRS2-STR-12",
-   "TSRS2-MET-29a-iv"
+   "TSRS2-MET-32",
+   "TSRS2-MET-29d",
+   "TSRS2-MET-29c"
   ],
   "secim": "rastgele"
  },
@@ -296,12 +296,12 @@
   ],
   "secim": "aday"
  },
- "sirket-akbank-2025-p012-18": {
-  "skor": 0.173,
+ "sirket-akbank-2025-p036-10": {
+  "skor": 0.154,
   "aday_maddeler": [
-   "TSRS2-MET-34",
-   "TSRS2-MET-32",
-   "TSRS2-MET-29d"
+   "TSRS2-RSK-25b",
+   "TSRS2-RSK-25c",
+   "VSME-B2-26"
   ],
   "secim": "rastgele"
  },
@@ -351,7 +351,7 @@
   "secim": "rastgele"
  },
  "sirket-klimasan-2025-p037-29": {
-  "skor": 0.148,
+  "skor": 0.145,
   "aday_maddeler": [
    "TSRS2-STR-14b",
    "VSME-B1-24e",
@@ -414,7 +414,7 @@
   "secim": "aday"
  },
  "sirket-klimasan-2025-p027-21": {
-  "skor": 0.172,
+  "skor": 0.178,
   "aday_maddeler": [
    "TSRS2-MET-29a-vi",
    "VSME-C8-64",

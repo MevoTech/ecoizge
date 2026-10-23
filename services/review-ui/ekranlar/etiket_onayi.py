@@ -1,6 +1,7 @@
 """Etiket onayı (R-HIL-01): model önerilerini onayla, düzelt ya da reddet.
 
-Kör pilot bitmeden bu sayfa kullanılmaz; önce modelin önerisini görmek körlemeyi bozar.
+Kör pilot sürerken (kor.pilot_kilitli) pilot paragraflarının önerileri kuyruktan çıkarılır ve
+gösterilmez; önce modelin önerisini görmek körlemeyi bozar (R-ETK-01).
 Koşu (runs/) ve taslak kuyrukları S07/S17 görevlerinde eklenecek.
 """
 
@@ -11,7 +12,10 @@ from pathlib import Path
 
 import streamlit as st
 
-sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+_KOK = str(Path(__file__).resolve().parents[1])
+if _KOK not in sys.path:
+    sys.path.insert(0, _KOK)
+from review_ui import kor  # noqa: E402
 from review_ui.logic import (  # noqa: E402
     KARSILAMA_PARAGRAF,
     Paths,
@@ -23,6 +27,7 @@ from review_ui.logic import (  # noqa: E402
 from review_ui.ortak import veri_dizini  # noqa: E402
 
 paths = Paths(veri_dizini())
+gizli = kor.pilot_kimlikleri(paths.data) if kor.pilot_kilitli(paths.data) else set()
 
 
 st.title("EcoIzge · Etiket onayı")
@@ -36,9 +41,14 @@ if not files:
 choice = st.sidebar.selectbox("Öneri dosyası", [f.name for f in files], key="file")
 proposal = paths.proposals / choice
 queue = pending(paths, proposal)
+saklanan = sum(r["paragraf_id"] in gizli for r in queue)
+queue = [r for r in queue if r["paragraf_id"] not in gizli]
+if saklanan:
+    st.info(f"{saklanan} öneri pilot paragraflarına ait; kör etiketleme bitene kadar gösterilmiyor.")
 st.sidebar.metric("Bekleyen", len(queue))
 if not queue:
-    st.success("Bu dosyadaki tüm öneriler karara bağlandı.")
+    if not saklanan:
+        st.success("Bu dosyadaki tüm öneriler karara bağlandı.")
     st.stop()
 
 row = queue[0]

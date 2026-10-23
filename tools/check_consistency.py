@@ -10,13 +10,14 @@ Mekanik olarak doğrulanabilen her şeyi denetler. Hata varsa listeler ve 1 ile 
  4. Ajanların kullandığı skill'ler var; her skill en az bir ajan tarafından kullanılıyor.
  5. Skill'ler: SKILL.md önbilgisi, ad = dizin adı, açıklama ≤ 1536 karakter.
  6. Yetkinlik matrisi: 18 zorunlu yetkinlik var; ajan ve skill var; skill o ajanın listesinde.
- 7. Görevler: önbilgi alanları, durum değerleri, sorumlu ajan, skill, gereksinim, bağımlılık;
-    tasks/README.md tablosu ile durum uyumu.
- 8. Gereksinimler: her R-* en az bir görevde ve TRACEABILITY.md'de.
- 9. ADR atıfları DECISIONS.md'de tanımlı.
+ 7. Plan (docs/DEVELOPMENT_PLAN.md): aşama alanları, durum, sorumlu ajan, skill, gereksinim,
+    bağımlılık (aşama ya da görev); ✋ görevde U-xx; aşama durumu ile görev simgeleri uyumu;
+    PROGRESS §1 tablosu ile durum uyumu; ✅ aşamanın §4 kaydı, 🔒 ✅ aşamanın denetim raporu.
+ 8. Gereksinimler: her R-* plandaki en az bir aşamada ve TRACEABILITY.md'de.
+ 9. ADR, D-xx, C-xx (DECISIONS), KL-xx (KNOWN_LIMITATIONS) ve U-xx (PROGRESS §2.1) atıfları tanımlı.
 10. Belgelerdeki yol atıfları ve göreli bağlantılar gerçek dosyalara işaret ediyor
     (henüz kurulmamış hedef dizinler FUTURE_PREFIXES ile açıkça listelenir).
-11. settings.json kanca betikleri var; CLAUDE.md 200 satırın altında.
+11. settings.json kanca betikleri var; CLAUDE.md AGENTS.md'yi içe aktarıyor; ikisi de 200 satırın altında.
 """
 
 from __future__ import annotations
@@ -50,10 +51,12 @@ SKILL_SECTIONS = ["Adımlar", "Tuzaklar", "Örnek", "Kontrol listesi"]
 CATALOG_ID_RE = re.compile(
     r"^(?:TSRS\d-[A-Z]{3}-\d+[A-Za-z0-9-]*|VSME-[BC]\d+-[A-Za-z0-9-]+|GRI-\d+[A-Za-z0-9-]*)$"
 )
-TASK_FIELDS = [
-    "id", "baslik", "faz", "durum", "sorumlu", "skills", "gereksinimler", "bagimlilik", "insan_onayi",
+PLAN_FIELDS = [
+    "Durum", "Sorumlu", "Skill'ler", "Gereksinimler", "Bağımlılık", "Amaç", "Girdi", "Görevler", "Kabul",
+    "Doğrulama", "Geri dönüş",
 ]  # fmt: skip
-TASK_STATES = {"bekliyor", "devam", "tamam", "engelli"}
+STAGE_STATES = {"⬜", "🟨", "✅", "✅ (✋ hariç)", "⛔"}
+TASK_MARKS = "✅|🟨|⬜|✋|⛔"
 # Henüz var olmayan ama belgelerde anılan yollar: (a) tasarımı yazılmış, kurulmamış bileşenler;
 # (b) çalışma zamanında üretilen dosyalar (manifest, onay günlüğü, yerel ayar); (c) görev çıktıları.
 # Kuruldukça buradan çıkarılır; liste bilinçli ve kısa tutulur.
@@ -63,12 +66,20 @@ FUTURE_PREFIXES = (
     "data/raw/pilot/", "services/forecast-service/", "requirements-train.txt",
     "services/report-service/report_service/api/", "services/report-service/report_service/db/",
     "services/report-service/report_service/core/",
+    "docs/research/", "docs/labeling/etiket_kilavuzu_v1.md", "data/labels/proposals/pilot_v0.csv", "data/labels/blind/",
 )  # fmt: skip
 PATH_ROOTS = (
-    ".claude/", "docs/", "tasks/", "tools/", "services/", "shared/", "data/", "tests/",
+    ".claude/", ".agents/", "docs/", "tools/", "services/", "shared/", "data/", "tests/",
     "notebooks/", "pipelines/", "runs/", "reports/", "db/", "docker/", "web/", ".github/",
 )  # fmt: skip
-ROOT_FILES = {"CLAUDE.md", "README.md", "pyproject.toml", "docker-compose.yml", "requirements-dev.txt"}
+ROOT_FILES = {
+    "CLAUDE.md",
+    "AGENTS.md",
+    "README.md",
+    "pyproject.toml",
+    "docker-compose.yml",
+    "requirements-dev.txt",
+}
 PLACEHOLDER_CHARS = set("<>*{}$…") | {"YYYY", "NNN", "Sxx", "<N"}
 
 
@@ -137,6 +148,28 @@ def is_path_ref(tok: str) -> bool:
     if any(c in tok for c in PLACEHOLDER_CHARS) or " " in tok:
         return False
     return not re.search(r"\.\.\.|xx|NN|<", tok)
+
+
+def parse_plan(text: str) -> dict[str, dict]:
+    """DEVELOPMENT_PLAN.md → {Sxx: {title, fields, tasks: {Tm: (simge, metin)}}}.
+
+    Aşama başlığı `## Sxx: ad`, alanlar `- **Alan:** değer` (aynı satırda `·` ile birden çok),
+    görevler `  - Tm <simge> metin`.
+    """
+    stages: dict[str, dict] = {}
+    parts = re.split(r"^## (S\d{2}): (.*)$", text, flags=re.M)
+    for i in range(1, len(parts), 3):
+        sid, title, block = parts[i], parts[i + 1], parts[i + 2]
+        block = re.split(r"^(?:## |---)", block, maxsplit=1, flags=re.M)[0]
+        fields: dict[str, str] = {}
+        for m in re.finditer(r"\*\*([^*]+):\*\*\s*([^·\n]*)", block):
+            fields[m.group(1).strip()] = m.group(2).strip()
+        tasks = {
+            m.group(1): (m.group(2), m.group(3))
+            for m in re.finditer(rf"^\s+- (T\d+) ({TASK_MARKS}) (.*)$", block, flags=re.M)
+        }
+        stages[sid] = {"title": title, "fields": fields, "tasks": tasks}
+    return stages
 
 
 def run(root: Path) -> Report:
@@ -250,60 +283,106 @@ def run(root: Path) -> Report:
     for comp in REQUIRED_COMPETENCIES:
         r.check(comp in found, f"matriste zorunlu yetkinlik yok: {comp}")
 
-    # 7–8: gereksinimler ve görevler
+    # 7–8: plan, PROGRESS ve gereksinimler
     req_text = (root / "docs" / "REQUIREMENTS.md").read_text(encoding="utf-8")
     reqs = set(re.findall(r"^\|\s*(R-[A-Z]{3}-\d{2})\s*\|", req_text, flags=re.M))
     r.check(bool(reqs), "REQUIREMENTS.md'de R-* tanımı yok")
     trace = (root / "docs" / "TRACEABILITY.md").read_text(encoding="utf-8")
     traced = set(re.findall(r"^\|\s*(R-[A-Z]{3}-\d{2})\s*\|", trace, flags=re.M))
-    tasks: dict[str, dict] = {}
-    for f in sorted((root / "tasks").glob("S[0-9][0-9]-*.md")):
-        meta, body = frontmatter(f.read_text(encoding="utf-8"))
-        r.check("__yaml_error__" not in meta, f"{f.name}: geçersiz YAML önbilgisi")
-        for k in TASK_FIELDS:
-            r.check(k in meta, f"{f.name}: önbilgide '{k}' yok")
-        tid = str(meta.get("id", ""))
-        r.check(f.name.startswith(tid + "-"), f"{f.name}: id={tid} dosya adıyla uyumsuz")
-        r.check(meta.get("durum") in TASK_STATES, f"{f.name}: durum={meta.get('durum')!r} geçersiz")
-        r.check(meta.get("sorumlu") in agents, f"{f.name}: sorumlu {meta.get('sorumlu')} ajan değil")
-        for s in as_list(meta.get("skills")):
-            r.check(s in skills, f"{f.name}: olmayan skill {s}")
-        for q in as_list(meta.get("gereksinimler")):
-            r.check(q in reqs, f"{f.name}: tanımsız gereksinim {q}")
-        for title in ("Kabul kriterleri", "Test komutu", "Kanıt", "Hata durumunda"):
-            r.check(section(body, title) is not None, f"{f.name}: '## {title}' bölümü yok")
-        tasks[tid] = meta
-    for tid, meta in tasks.items():
-        for dep in as_list(meta.get("bagimlilik")):
-            r.check(dep in tasks, f"{tid}: bilinmeyen bağımlılık {dep}")
-    idx_text = (root / "tasks" / "README.md").read_text(encoding="utf-8")
-    for tid, meta in tasks.items():
-        m = re.search(rf"^\|\s*\[{tid}\]\([^)]+\)\s*\|[^|]*\|[^|]*\|\s*([a-z]+)\s*\|", idx_text, re.M)
-        r.check(bool(m), f"tasks/README.md tablosunda {tid} yok")
-        if m:
+    plan_text = (root / "docs" / "DEVELOPMENT_PLAN.md").read_text(encoding="utf-8")
+    progress = (root / "docs" / "PROGRESS.md").read_text(encoding="utf-8")
+    stages = parse_plan(plan_text)
+    r.check(bool(stages), "DEVELOPMENT_PLAN.md'de aşama yok")
+    all_tasks = {f"{sid}.{tid}" for sid, s in stages.items() for tid in s["tasks"]}
+    users = set(re.findall(r"^\|\s*(U-\d{2})\s*\|", progress, flags=re.M))
+    status_sec = section(progress, "1. Aşama durumu") or ""
+    status_rows = dict(re.findall(r"^\|\s*(S\d{2})\s*\|[^|]*\|\s*([^|]*?)\s*\|", status_sec, flags=re.M))
+    evidence = section(progress, "4. Kanıt günlüğü") or ""
+    audits = root / "docs" / "audits"
+    for sid, s in stages.items():
+        for field in PLAN_FIELDS:
+            r.check(field in s["fields"], f"plan {sid}: '{field}' alanı yok")
+        durum = s["fields"].get("Durum", "")
+        r.check(durum in STAGE_STATES, f"plan {sid}: geçersiz durum {durum!r}")
+        sorumlu = re.findall(r"`([a-z-]+)`", s["fields"].get("Sorumlu", ""))
+        r.check(
+            bool(sorumlu) and all(a in agents for a in sorumlu),
+            f"plan {sid}: sorumlu ajan geçersiz {sorumlu}",
+        )
+        for sk in re.findall(r"`([a-z-]+)`", s["fields"].get("Skill'ler", "")):
+            r.check(sk in skills, f"plan {sid}: olmayan skill {sk}")
+        sreqs = re.findall(r"R-[A-Z]{3}-\d{2}", s["fields"].get("Gereksinimler", ""))
+        for q in sreqs:
+            r.check(q in reqs, f"plan {sid}: tanımsız gereksinim {q}")
+        for dep in re.findall(r"S\d{2}(?:\.T\d+)?", s["fields"].get("Bağımlılık", "")):
+            known = dep in stages if "." not in dep else dep in all_tasks
+            r.check(known, f"plan {sid}: bilinmeyen bağımlılık {dep}")
+        r.check(bool(s["tasks"]), f"plan {sid}: görev yok")
+        marks = [m for m, _ in s["tasks"].values()]
+        for tid, (mark, text) in s["tasks"].items():
+            if mark == "✋":
+                r.check(bool(re.search(r"U-\d{2}", text)), f"plan {sid}.{tid}: ✋ görevde U-xx yok")
+        if durum == "✅":
+            r.check(all(m == "✅" for m in marks), f"plan {sid}: aşama ✅ ama tamamlanmamış görev var")
+        elif durum == "✅ (✋ hariç)":
             r.check(
-                m.group(1) == meta.get("durum"), f"{tid}: README durumu {m.group(1)} ≠ {meta.get('durum')}"
+                all(m in ("✅", "✋") for m in marks),
+                f"plan {sid}: '✅ (✋ hariç)' ama ✋ dışında açık görev var",
             )
-    task_reqs = {q for m in tasks.values() for q in as_list(m.get("gereksinimler"))}
+        elif durum == "⬜":
+            r.check(
+                not ({"✅", "🟨"} & set(marks)), f"plan {sid}: aşama ⬜ ama başlamış görev var (🟨 olmalı)"
+            )
+        elif durum == "🟨":
+            r.check(any(m != "✅" for m in marks), f"plan {sid}: bütün görevler ✅ ama aşama 🟨")
+        row = status_rows.get(sid)
+        r.check(row is not None, f"PROGRESS §1 tablosunda {sid} yok")
+        if row is not None:
+            r.check(row.startswith(durum), f"{sid}: PROGRESS durumu {row!r} ≠ plan {durum!r}")
+        if durum.startswith("✅"):
+            r.check(
+                bool(re.search(rf"^### .*\b{sid}\b", evidence, flags=re.M)),
+                f"{sid}: ✅ ama PROGRESS §4'te kaydı yok",
+            )
+            if "🔒" in s["title"]:
+                r.check((audits / f"{sid}.md").exists(), f"{sid}: 🔒 aşama ✅ ama docs/audits/{sid}.md yok")
+    for sid in status_rows:
+        r.check(sid in stages, f"PROGRESS §1'deki {sid} planda yok")
+    plan_reqs = {
+        q
+        for s in stages.values()
+        for q in re.findall(r"R-[A-Z]{3}-\d{2}", s["fields"].get("Gereksinimler", ""))
+    }
     for q in sorted(reqs):
-        r.check(q in task_reqs, f"{q} hiçbir görevde yok")
+        r.check(q in plan_reqs, f"{q} plandaki hiçbir aşamada yok")
         r.check(q in traced, f"{q} TRACEABILITY.md'de yok")
-
+    for sid in set(re.findall(r"\bS\d{2}\b", trace)):
+        r.check(sid in stages, f"TRACEABILITY.md: planda olmayan aşama {sid}")
+    limits = (root / "docs" / "KNOWN_LIMITATIONS.md").read_text(encoding="utf-8")
+    kls = set(re.findall(r"^\|\s*(KL-\d{2})\s*\|", limits, flags=re.M))
     # 9–10: ADR ve yol atıfları
     decisions = (root / "docs" / "DECISIONS.md").read_text(encoding="utf-8")
     adrs = set(re.findall(r"^## (ADR-\d{3})", decisions, flags=re.M))
+    open_ids = set(re.findall(r"^\|\s*([DC]-\d{2})\s*\|", decisions, flags=re.M))
     catalogs = sorted((root / "data" / "catalog").glob("catalog_v*.csv"))
     catalog_ids = set()
     for c in catalogs:
         catalog_ids |= {ln.split(",", 1)[0] for ln in c.read_text(encoding="utf-8").splitlines()[1:] if ln}
-    scan = [root / "CLAUDE.md", root / "README.md"]
-    scan += sorted((root / ".claude").rglob("*.md"))
-    scan += sorted((root / "docs").glob("*.md")) + sorted((root / "tasks").glob("*.md"))
+    scan = [root / "CLAUDE.md", root / "README.md", root / "AGENTS.md"]
+    scan += sorted((root / ".claude").rglob("*.md")) + sorted((root / ".agents").rglob("*.md"))
+    scan += sorted((root / "docs").glob("*.md")) + sorted((root / "docs" / "kullanim").glob("*.md"))
+    scan += sorted((root / "docs" / "audits").glob("*.md"))
     for f in scan:
         text = f.read_text(encoding="utf-8")
         rel = f.relative_to(root)
         for adr in set(re.findall(r"ADR-\d{3}", text)):
             r.check(adr in adrs, f"{rel}: tanımsız {adr}")
+        for ref in set(re.findall(r"\b([DC]-\d{2})\b", text)):
+            r.check(ref in open_ids, f"{rel}: tanımsız {ref}")
+        for ref in set(re.findall(r"\b(KL-\d{2})\b", text)):
+            r.check(ref in kls, f"{rel}: tanımsız {ref}")
+        for ref in set(re.findall(r"\b(U-\d{2})\b", text)):
+            r.check(ref in users, f"{rel}: tanımsız {ref} (PROGRESS §2.1)")
         for tok in set(re.findall(r"`([^`\n]+)`", text)):
             tok = tok.split("::")[0].split("#")[0].rstrip("/.,:;")
             if (
@@ -328,8 +407,13 @@ def run(root: Path) -> Report:
             for h in group.get("hooks", []):
                 for p in re.findall(r"\$CLAUDE_PROJECT_DIR/([^\"\s]+)", h.get("command", "")):
                     r.check((root / p).exists(), f"settings.json: kanca betiği yok {p}")
-    lines = (root / "CLAUDE.md").read_text(encoding="utf-8").count("\n")
-    r.check(lines < 200, f"CLAUDE.md {lines} satır (≥ 200)")
+    for name in ("CLAUDE.md", "AGENTS.md"):
+        lines = (root / name).read_text(encoding="utf-8").count("\n")
+        r.check(lines < 200, f"{name} {lines} satır (≥ 200)")
+    r.check(
+        "@AGENTS.md" in (root / "CLAUDE.md").read_text(encoding="utf-8"),
+        "CLAUDE.md AGENTS.md'yi içe aktarmıyor",
+    )
     return r
 
 

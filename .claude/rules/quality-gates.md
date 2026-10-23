@@ -2,11 +2,11 @@
 
 ## Bitti tanımı (her görev)
 
-1. Görev dosyasındaki (`tasks/Sxx-*.md`) bütün kabul kriterleri karşılandı.
+1. Aşamanın `docs/DEVELOPMENT_PLAN.md` bölümündeki bütün kabul kriterleri ve AK-G1…G5 karşılandı.
 2. `python tools/check_all.py` çıkış kodu 0. Çıktısı rapora eklendi.
 3. Yeni davranış için test var. Test bir kez başarısız, düzeltmeden sonra başarılı koştu.
 4. Kod değiştiyse `code-reviewer` incelemesi yapıldı. Güvenlik kritik bir değişiklikse `security-auditor` incelemesi de yapıldı. Kritik bulgu açık kalmadı.
-5. `docs/PROGRESS.md` ve görevin `durum` alanı güncellendi. `[uygulandı]` etiketi yalnızca var olan ve test edilen öğelerde.
+5. `docs/PROGRESS.md` (§1 durum, §4 kanıt) ve plandaki durum satırı güncellendi. `[uygulandı]` etiketi yalnızca var olan ve test edilen öğelerde.
 
 ## Kanıt kuralları
 

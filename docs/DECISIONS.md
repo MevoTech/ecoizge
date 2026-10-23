@@ -77,3 +77,31 @@ Tarih: 2026-10-22 · Durum: **önerildi** · Karar sahibi: Mehmet Güneş
 Bağlam: B6 (insan–model κ ile insan–insan κ ayrımı), B12 (ClimateBERT/ClimaText'in rolü tanımsız). Kullanıcı 2026-10-22'de danışmana götürülmemesini istedi.
 Karar (öneri): 30–50 paragraflık bir alt kümeyi Zemzem ikinci insan olarak etiketler; iki κ ayrı raporlanır. İngilizce veri setleri yalnızca katkıları ayrı bir deneyle ölçülürse kullanılır, aksi hâlde kapsam dışı.
 Sonuçlar: S05, S16.
+
+---
+
+## Açık kararlar (D-xx)
+
+Kullanıcının vermesi gereken ya da henüz ADR'ye dönüşmemiş kararlar. Kapanan karar, ilgili ADR'nin durumu `kabul` olunca "kapandı" diye işaretlenir; satır silinmez. Kullanıcı eylemleri: [PROGRESS.md](PROGRESS.md) §2.1.
+
+| D | Konu | Kayıt | Engellediği | Durum |
+|---|---|---|---|---|
+| D-01 | Türkçe spesifiklik skoru | ADR-007 | S16 | açık (U-05) |
+| D-02 | `yaz`/`tamamla` kipleri ve unsur kapsama | ADR-008 | S02, S14, S17 | açık (U-05) |
+| D-03 | Maskeleme ile üretim değerlendirmesi | ADR-009 | S19 | açık (U-05) |
+| D-04 | MVP standart kapsamı | ADR-010 | S02 | açık (U-05) |
+| D-05 | Veri sınıfları ve harici dil modeli | ADR-011 | S17 | açık (U-05) |
+| D-06 | İkinci insan etiketleyici, İngilizce veri setleri | ADR-012 | S05.T7, S16 | açık (U-05) |
+| D-07 | PDF kütüphanesi: PyMuPDF mi, pdfplumber mı | — (ölçüm S04.T6) | S04 kapanışı | açık |
+| D-08 | `data/labels/blind/**` korumalı yollara eklensin mi | — (`code-reviewer`, 2026-10-23) | — | açık, öneri: ekle |
+
+## Çelişki kaydı (C-xx)
+
+Belgeler arası ya da belge ile kod arası çelişkiler ve çözümleri. Çözülmemiş çelişki açık kalır ve [PROGRESS.md](PROGRESS.md) §3'te risk olarak izlenir.
+
+| C | Çelişki | Çözüm | Durum |
+|---|---|---|---|
+| C-01 | Geliştirme 2'deki web arayüzü (React iskeleti, veri giriş formları, boşluk matrisi, taslak editörü, panel) görev listesinde yoktu | Plana S25, S26, S27 eklendi (2026-10-23) | çözüldü |
+| C-02 | `label-propose` skill'i pilot örneklemi `data/labels/proposals/` altına yazdırıyor; kör etiketleme ekranı `data/labels/pilot/orneklem.jsonl` okuyor | Kanonik yol `data/labels/pilot/orneklem.jsonl`; skill ve ekran eşitlendi, aynı kimlik kümesi testle zorlanıyor | çözüldü |
+| C-03 | Geliştirme 2 §4 KOBİ raporu sayısı istiyor; derlem çoğunlukla büyük şirket raporları | S03.T5: ölçek kaynakla sınıflandırılır; KOBİ az çıkarsa tezde açıkça yazılır | açık |
+| C-04 | Görev durumları hem `tasks/` dosyalarında hem PROGRESS'te tutuluyordu | Tek plan ([DEVELOPMENT_PLAN.md](DEVELOPMENT_PLAN.md)) ve tek durum kaynağı (PROGRESS §1); `tasks/` kaldırıldı | çözüldü |

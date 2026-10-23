@@ -15,7 +15,9 @@ from pathlib import Path
 
 import streamlit as st
 
-sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+_KOK = str(Path(__file__).resolve().parents[1])
+if _KOK not in sys.path:
+    sys.path.insert(0, _KOK)
 from review_ui import kor, qa  # noqa: E402
 from review_ui.ortak import ad_al, deney_dizini, veri_dizini  # noqa: E402
 
@@ -34,12 +36,12 @@ st.markdown("Sırayla ilerle. Her adımın ayrıntısı `docs/kullanim/ELLE_KONT
 
 c1, c2, c3 = st.columns(3)
 c1.metric("1 · Çıkarım kontrolü", f"{qa_ozet['sayfa']} / {len(raporlar) * qa.SAYFA_SAYISI} sayfa")
-if ad:
-    yapilan = kor.yapilanlar(yollar.cikti(ad))
-    c2.metric("2 · Kör etiketleme", f"{len(yapilan)} / {len(orneklem)} paragraf")
-else:
+try:
+    biten, toplam, _ = kor.ilerleme(orneklem, kor.yapilanlar(yollar.cikti(ad)))
+    c2.metric("2 · Kör etiketleme", f"{biten} / {toplam} paragraf")
+except ValueError:
     c2.metric("2 · Kör etiketleme", "ad gir")
-c3.metric("3 · Etiket onayı", "pilot sonrası")
+c3.metric("3 · Etiket onayı", "pilot sürüyor" if kor.pilot_kilitli(data) else "açık")
 
 st.subheader("Hazırlık denetimi")
 denetim = [
