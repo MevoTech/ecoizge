@@ -37,6 +37,7 @@ Bu klasör raporlama modülünü bugünkü durumundan (F1, araştırma) tez tesl
 | S01 Ajan altyapısı | AI_WORKFLOW, ORCHESTRATION, COMPETENCY_MATRIX, `.claude/hooks/write_scopes.json` |
 | S02 Katalog | etiket kılavuzu, DECISIONS (ADR-008, ADR-010), `.claude/skills/catalog-update/SKILL.md` |
 | S03–S04 Derlem, çıkarım | `.claude/rules/turkce-tdk.md`, `.claude/skills/pdf-extract/SKILL.md`, KNOWN_LIMITATIONS (KL-01, KL-02, KL-04) |
+| S28 Tablo ve grafik | DECISIONS (ADR-014), `docs/research/tablo-grafik-cikarimi.md`, `.claude/skills/table-extract/SKILL.md`, `.claude/skills/figure-extract/SKILL.md`, `.claude/skills/table-eval/SKILL.md`, KNOWN_LIMITATIONS (KL-02, KL-13, KL-14) |
 | S05, S07 Etiketleme, arayüz | etiket kılavuzu, `.claude/skills/label-propose/SKILL.md`, `.claude/skills/label-review/SKILL.md`, kullanım kılavuzu |
 | S06, S11 Şema, sözleşme | REQUIREMENTS, DATA_MODEL, API_SPEC |
 | S08 Yöntem kararları | DECISIONS (ADR-007…012), `docs/analysis/00_ANALIZ_RAPORU.md` |

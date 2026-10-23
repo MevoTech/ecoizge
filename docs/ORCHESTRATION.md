@@ -38,6 +38,7 @@ Koordinasyon neden yalnızca orkestratör üzerinden:
 | Belge değişikliği | `architect` veya orkestratör → `docs-auditor` | — |
 | Ortak şema / sözleşme | `architect` → Zemzem'in PR onayı → `test-engineer` | Her zaman |
 | Katalog değişikliği | orkestratör (`catalog-update`) → `docs-auditor` | Her zaman |
+| Tablo / grafik çıkarımı | `ml-engineer` (`table-extract`, `figure-extract`) → `test-engineer` → `code-reviewer` → `evaluator` (`table-eval`) | Altın tablo kümesi (insan), motor ADR'si |
 | Faz sonu | `docs-auditor` ‖ `security-auditor` → orkestratör PROGRESS günceller | Faz kapanışı |
 
 Seçim ilkesi: tablodaki en kısa yol. Tek dosyalık küçük iş için orkestratör kendisi yapar, ama kendi işini kendisi onaylamaz.

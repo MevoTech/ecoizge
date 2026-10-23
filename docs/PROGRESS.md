@@ -42,6 +42,7 @@ S01–S24 aşama protokolünden önce `main` dalında yürüdü; dal ve etiket d
 | S25 | Web arayüzü iskeleti ve veri giriş formları | ⬜ |  |  |  |  |  |
 | S26 | Boşluk matrisi ve taslak editörü | ⬜ |  |  |  |  |  |
 | S27 | Panel sayfası | ⬜ |  |  |  |  |  |
+| S28 | Tablo ve grafik çıkarımı | 🟨 | asama/S28-tablo-grafik |  | 2026-10-23 |  | §4 S28 |
 
 ## 2. Kararlar ve kullanıcı eylemleri
 
@@ -72,6 +73,7 @@ Ayrıntılar [DECISIONS.md](DECISIONS.md)'de. Kabul edilenler: ADR-001…ADR-006
 | U-13 | Uzman değerlendiricileri belirle | S23.T1 | — |
 | U-14 | Docker Desktop (WSL 2) kur | S09.T1 | — |
 | U-15 | Zemzem ikinci etiketleyici olarak 30–50 paragraf etiketler (D-06 kabul edilirse) | S05.T7 | ADR-012 |
+| U-16 | Altın tablo kümesi: 4 rapor × 5 tablo PDF'ten elle CSV'ye (en az 2 kenarlıksız, 1 bölünen, 1 birleşik başlıklı); `altin_donustur.py` ile `data/gold/tables/`; olguların birim ve dönemini kontrol | S28.T6 | `.claude/skills/table-eval/SKILL.md` Adımlar 1 |
 
 ## 3. Riskler
 
@@ -101,6 +103,61 @@ Ayrıntılar [DECISIONS.md](DECISIONS.md)'de. Kabul edilenler: ADR-001…ADR-006
 ```
 
 En yeni kayıt en üstte. 2026-10-23 öncesi kayıtlar eski düzende tarih başlıklıydı; içerikleri olduğu gibi korunup aşama kimlikleriyle yeniden başlıklandırıldı.
+
+### S28: Tablo ve grafik çıkarımı: ızgara, olgu, şekil, ölçüm (2026-10-23)
+Kullanıcı isteği: "tablolar ve içindeki veriler ayrışıyor mu … bu yapıyı kurduğundan emin ol … alt ajan ve skilleri geliştir … skillerin GitHub reposunu bul". Dal `asama/S28-tablo-grafik`, PR #1 (taslak, CI için).
+
+- **Önceki durum (ölçüldü):**
+  - Tablo yalnızca düz metin birimiydi.
+  - Klimasan'da "Tablo N" başlıklı 34 sayfanın 13'ünde tablo bulunmuyordu.
+  - Bölünen tablolar birleşmiyordu; grafiklerden hiçbir şey okunmuyordu.
+- **Görev S28.T1 ✅** Şema `tablo-0.1` / `olgu-0.1` / `sekil-0.1`, ızgara değişmezi; `validate_data.py` yapısal dosyalar.
+  - Komut: `python -m pytest -q tests/tools/test_validate_data.py` → geçti.
+- **Görev S28.T2 ✅** `pipelines/tables.py`:
+  - ızgara ve birleşik hücre; başlık rolleri; kenarlıksız sezgi; sayfalar arası birleştirme;
+  - uyarılar; çerçeve kutusu ayıklama; hücre metni sözcük merkezinden.
+- **Görev S28.T3 ✅** Olgular:
+  - `numbers`: `hucre_degeri` (eksi, muhasebe ayracı, artı, eksik, dipnot, dönem öneki), `birim_bul`/`birimler_bul`, para birimi, önek para birimi;
+  - düzeltilen eski hatalar: "ton CO₂ " çökmesi ve "CO 2 e" alt simge.
+- **Görev S28.T4 ✅** `pipelines/figures.py`:
+  - ortak tabanlı çubuk grupları, küresel etiket–çubuk eşlemesi, lejant rengi → seri;
+  - görüntü grafikte veri yok işareti.
+- **Görev S28.T5 ✅** Docling uyarlayıcısı ve `pipelines/structure.py`; iki motorla 4 rapor (`run_id` s28-kapsama-2026-10-23).
+  - Rapor: [reports/experiments/s28-kapsama-2026-10-23.md](../reports/experiments/s28-kapsama-2026-10-23.md).
+  - 24 çıktı dosyasının hepsi `validate_data.py` OK.
+  - Kaçan "Tablo N" sayfası: PyMuPDF Klimasan 2 (s. 26, 62), Akbank 2 (s. 5, 35); Docling 0.
+  - Klimasan olguları: PyMuPDF 27 (16 birimli), Docling 27 (27 birimli). Akbank Şekil 6: 9/9 değer.
+  - Bu bir doğruluk ölçümü değildir (altın küme yok).
+- **GriTS doğrulaması:**
+  - `tools/tablo_olcum.py` Microsoft table-transformer `src/grits.py` (MIT, commit 16d124f) ile 300 rastgele ızgara çiftinde karşılaştırıldı.
+  - En büyük fark 0,00e+00 (betik bulut kapsayıcıda koşuldu; başvuru kodu depoya alınmadı).
+  - Kasıtlı bozma (yalnız köşegen hizalama) → test kırmızı.
+- **Bağımsız inceleme:** `code-reviewer`, [audits/S28-inceleme-2026-10-23.md](audits/S28-inceleme-2026-10-23.md).
+  - Bulgular: 1 kritik (yanlış birim, ×1000 hatalı değer), 12 önemli, 2 küçük. Hepsi için önce kırmızı test, sonra düzeltme.
+  - Gerçek veriyle ek 5 hata bulundu ve düzeltildi:
+    - çerçeve kutusu 4 raporda 180 hücreyi yutuyordu;
+    - Docling 0×0 tablo;
+    - birleştirme zinciri;
+    - Windows yumuşak tire;
+    - hücre sınırına taşan sözcük.
+- **Kalite kapısı:** `python tools/check_all.py` → 6/6 GEÇTİ; CI ubuntu-latest ve windows-latest (son commit'in sonucu PR #1'de).
+  - Windows'ta CI iki kez kırmızı oldu: Arial "-" karakterini U+00AD olarak kodluyor. İki düzeltme de regresyon testli.
+- **Skill ve ajanlar:**
+  - `table-extract`, `figure-extract` (`ml-engineer`), `table-eval` (`evaluator`);
+  - yetkinlik matrisi: "Bilgisayarlı görü" etkin;
+  - yönlendirme tablosuna "Tablo / grafik çıkarımı" satırı.
+  - Dış skill depoları: [docs/research/tablo-grafik-cikarimi.md](research/tablo-grafik-cikarimi.md) §4. anthropics/skills `pdf` özel lisanslı olduğundan kopyalanmadı. Docling resmî skill'i (MIT) `uvx library-skills --claude` ile bağlanabilir. PaddleOCR skill'i bulut API'si istiyor, kullanılmadı.
+- **Öz-denetim (AGENTS §7):**
+  - Gerçek veri: 4 kamu raporu (pilot gizli verisi değil); testler sentetik.
+  - Koşulamayan: altın kümeye karşı doğruluk (U-16 yok).
+  - Rapor bazında bölme ve altın küme yalıtımı: bu aşamada eğitim yok; `data/gold/tables` korumalı yol, yalnızca insan yazar.
+  - Türkçe: sayı ayrıştırma yalnızca `verify.numbers`'ta; TL/EUR ayrımı yapılıyor; "MİLYON" büyük harfi okunuyor.
+  - Belge kaynaklı talimat: hücre metni yalnızca veri; istem yok.
+  - Gizli veri: Docling yerel, belge dışarı gitmiyor.
+  - İnsan onayı atlanamıyor: altın küme ve motor kararı insanda.
+  - Windows: CI windows-latest'te iki gerçek fark bulundu ve düzeltildi.
+  - Sonuçlar `run_id` s28-kapsama-2026-10-23'e bağlı.
+- **Kalan:** S28.T6 ✋ U-16 altın tablo kümesi; T7 ölçüm ve D-09 kararı; T8 görüntü grafik denemesi (KL-14).
 
 ### S05, S07: Etiket şeması 0.1 (ADR-013), analiz ekranı ve bağımsız inceleme (2026-10-23)
 
@@ -412,6 +469,10 @@ Geri alma sonrası: 121/121 geçti. Tutarlılık testleri bu denemeden sonra ekl
 | S03.T3 | Kullanıcının makinesindeki 18 boş `.part` dosyası ve `_araclar/parca/` | U-01 sırasında kullanıcı siler | Bu klasörde silme izni yok |
 | S02 | GRI 302/305 maddeleri | İkinci aşama (D-04) | MVP kapsamı |
 | — | ESRS | Gelecek çalışma (D-04) | MVP kapsamı |
+| S28.T2 | Olguların (`facts.jsonl`, `olgu_metni`) retrieval birimi olarak dizine girmesi | S13 | Embedding modeli seçilmeden dizin kurulmaz |
+| S28.T3 | Taslak sayısının olguya bağlanması (yer tutucu doldurma ve `verify.match` kaynağı olarak olgu) | S18 | Doğrulama katmanı entegrasyonu orada |
+| S28.T6 | Onay arayüzünde "Tablo kontrolü" ekranı (ızgarayı PDF yanında gösterme, düzeltme) | S07 sonrası, ihtiyaç olursa | Altın küme şimdilik CSV ile; ekran insan yükünü azaltırsa açılır |
+| S28.T2 | `paragraphs.jsonl` tablo birimlerinin yapısal tablodan yeniden üretilmesi | Kılavuz v1 turu (S05 sonrası) | Etiket kimlikleri bağlı; kimlik eşlemesi gerekir (KL-02) |
 
 ## 6. Otonom kararlar
 
@@ -431,3 +492,9 @@ Ajanın kullanıcıya sormadan verdiği kararlar. Kullanıcı bu tabloyu okuyara
 | 2026-10-23 | S07.T7 | 10 dakikayı aşan paragraf süresi "kesintili" sayılır, toplam ve medyana girmez | Ara verme etiketleme maliyetini şişirmesin | ADR-013 |
 | 2026-10-23 | S01.T5 | `noor` belge yapısı uyarlandı; `tasks/` kaldırıldı, plan tek dosyada | Kullanıcı isteği; tek kaynak ilkesi | C-04 |
 | 2026-10-23 | S01.T5 | Geliştirme 2'deki web arayüzü için S25–S27 eklendi | Plan ile kaynak belge çelişkisi | C-01 |
+| 2026-10-23 | S28 | Tablo ve grafik işi yeni aşama S28 olarak açıldı (S04'e eklenmedi) | S04 elle kontrol bekliyor (U-03); tablo yapısı ayrı gereksinimler (R-TAB-01…05) ve ayrı ölçüm ister | Plan S28 |
+| 2026-10-23 | S28.T1 | Kayıt biçimi motordan bağımsız, hücre alanları docling-core `TableCell` anlamında; `paragraphs.jsonl` değişmedi | Motor değişince şema değişmesin; pilot örneklemi ve kör etiket kimlikleri korunsun | ADR-014 |
+| 2026-10-23 | S28.T3 | `verify.numbers`'a para birimi (TL, EUR, USD) eklendi; farklı birimler eşlenmez, kur çevrimi yok | Finansal etki tabloları TL/EUR; birimsiz kalırsa "805.299 TL" ile "805.299 ton" ayırt edilemez | ADR-014 |
+| 2026-10-23 | S28.T5 | Docling isteğe bağlı ikinci motor (`requirements-extract.txt`), CI'da kurulmaz; varsayılan PyMuPDF; karar ölçümle (D-09) | Torch + model indirmesi ağır; ölçümsüz motor değişikliği yapılmaz | ADR-014, D-09 |
+| 2026-10-23 | S28.T4 | Grafikte değer yalnızca yazılı etiketten; çubuk boyundan ve görüntüden değer üretilmez | Uydurma sonuç yasağı; yaklaşık değer ayrı işaret ve ölçüm ister | ADR-014, KL-14 |
+| 2026-10-23 | S28.T6 | Altın tablo kümesi motor çıktısından kopyalanmaz, insan PDF'ten yazar; kutu koordinatı yok, eşleme içerikle | Ölçülen motoru kayırmamak; insan için kutu ölçmek pratik değil | `table-eval` |

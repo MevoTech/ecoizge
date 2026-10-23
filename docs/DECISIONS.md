@@ -102,6 +102,28 @@ Sonuçlar:
   - Süre etkin süredir.
 Kanıt: PROGRESS §4 (2026-10-23, ADR-013 kaydı).
 
+## ADR-014 · Tablo ve grafik: hücre ızgarası, olgu ve iki motor
+Tarih: 2026-10-23 · Durum: kabul (motor varsayılanı S28.T7 ölçümüne kadar geçici) · Karar sahibi: orkestratör, kullanıcı isteğiyle (2026-10-23, "tablolar ve içindeki veriler ayrışıyor mu … bu yapıyı kurduğundan emin ol")
+Bağlam: `pipelines/extract.py` tabloyu "a | b" satırlarından oluşan tek bir metin birimi olarak veriyordu. Hücre konumu, birleşik hücre, başlık rolü, birim, dönem ve koordinat yoktu. Kenarlıksız tablolar kaçıyordu (Klimasan 2025: "Tablo N" başlıklı 34 sayfanın 13'ünde tablo yok). Bölünen tablolar birleşmiyordu (KL-02). Grafiklerden hiçbir şey okunmuyordu. Taslaktaki sayıyı doğrulamak (ADR-004, R-VER-01) için "12.450"nin hangi satır, sütun, yıl ve birime ait olduğu bilinmeli.
+Seçenekler:
+- (A) PyMuPDF üzerine kendi ızgara, başlık, birleştirme ve olgu katmanımız; hafif, CI'da koşar, kenarlıksız tabloda sezgisel.
+- (B) Docling (MIT, yerel, TableFormer modeli): kenarlıksız ve karmaşık tablolarda daha iyi (4 raporun başlıklı sayfalarında deneme: Klimasan s. 37 ve s. 51'i doğru ayırdı); torch ve model indirmesi gerektirir, CPU'da sayfa başına ~1–5 sn.
+- (C) PaddleOCR PP-StructureV3 (Apache-2.0): tablo hücre koordinatı ve grafik → tablo (PP-Chart2Table) var; Paddle çerçevesi ek bağımlılık; resmî ajan skill'i bulut API'si ve erişim belirteci ister (yeni harici servis).
+- (D) Azure Document Intelligence: bulut servisi; pilot verisi gönderilemez (ADR-011), yeni harici servis ve hesap gerekir.
+Karar:
+- Kayıt biçimi motordan bağımsızdır: `tablo-0.1`, `olgu-0.1`, `sekil-0.1` (`tools/tablo_kurallari.py`). Hücre alanları docling-core `TableCell` ile aynı anlamda; ızgara bütünlüğü (her konum tam bir hücre) doğrulanır.
+- A varsayılan motordur, B isteğe bağlı ikinci motordur (`--motor docling`, `requirements-extract.txt`). C ve D kullanılmaz (C: ek çerçeve ve bulut skill'i; D: harici servis). Varsayılan, S28.T7'de altın kümede ölçülerek yeniden kararlaştırılır.
+- `paragraphs.jsonl` değişmez (pilot örneklemi ve kör etiketler ona bağlı). Yeni çıktılar ayrı dosyalardır: `tables.jsonl`, `facts.jsonl`, `figures.jsonl`.
+- Olgu: değer `verify.numbers` ile; birim önceliği hücre > sütun başlığı > satır başlığı > tablo başlığı; iki farklı birim anan ya da sayısal veri içeren başlıktan birim alınmaz; bir öğede birden çok yıl varsa dönem boş kalır; yıl hücresine birim verilmez; "-", "—", "n/a" eksik değerdir.
+- `verify.numbers`'a para birimi (TL, EUR, USD) eklendi: farklı para birimleri ve fiziksel birimler birbiriyle eşlenmez; kur çevrimi yapılmaz.
+- Grafik: değer yalnızca grafikte yazılı etiketten okunur; çubuk boyundan tahmin ve görüntüden veri üretimi yapılmaz (KL-14). Okunamayan grafik `veri_durumu` ile açıkça işaretlenir.
+- Ölçüm: tespit, GriTS_Con/GriTS_Top (Smock vd. 2023) ve olgu P/R/F1; insan altın kümesi (U-16).
+Sonuçlar:
+- Yeni: `pipelines/tables.py`, `figures.py`, `structure.py`; `tools/tablo_kurallari.py`, `tablo_olcum.py`; skill'ler `table-extract`, `figure-extract`, `table-eval`; R-TAB-01…05; S28.
+- Olgular S13'te retrieval birimi, S18'de sayı doğrulamanın kaynağı olur (PROGRESS §5).
+- Geri alma: yeni dosyalar yok sayılır; `paragraphs.jsonl` ve etiketler etkilenmez.
+Kanıt: PROGRESS §4 S28; araştırma notu [research/tablo-grafik-cikarimi.md](research/tablo-grafik-cikarimi.md).
+
 ---
 
 ## Açık kararlar (D-xx)
@@ -117,6 +139,7 @@ Kullanıcının vermesi gereken ya da henüz ADR'ye dönüşmemiş kararlar. Kap
 | D-05 | Veri sınıfları ve harici dil modeli | ADR-011 | S17 | açık (U-05) |
 | D-06 | İkinci insan etiketleyici, İngilizce veri setleri | ADR-012 | S05.T7, S16 | açık (U-05) |
 | D-07 | PDF kütüphanesi: PyMuPDF mi, pdfplumber mı | — (ölçüm S04.T6) | S04 kapanışı | açık |
+| D-09 | Varsayılan tablo motoru: PyMuPDF (+ sezgi) mi, Docling mi | ADR-014 | S28.T7 (altın küme U-16'dan sonra) | açık |
 | D-08 | `data/labels/blind/**` korumalı yollara eklensin mi | — (`code-reviewer`, 2026-10-23) | — | kapandı: eklendi (Mehmet'in genel onayı, 2026-10-23) |
 
 ## Çelişki kaydı (C-xx)

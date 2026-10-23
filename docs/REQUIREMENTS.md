@@ -14,6 +14,11 @@ Kimlikler yalnızca burada tanımlanır. Her kimlik `docs/DEVELOPMENT_PLAN.md`'d
 | R-KAT-02 | Şirket bir rapor profili seçer (VSME Temel, VSME Kapsamlı, TSRS); boşluk analizi o profilin maddeleriyle çalışır | G2 §4 |
 | R-PDF-01 | Yüklenen PDF'ten paragraf ve tablolar sayfa ve başlık bağlamıyla çıkarılır | TK 5.4, S-11 |
 | R-PDF-02 | Çıkarım kalitesi elle kontrol edilmiş bir kümede ölçülür ve raporlanır | B14 |
+| R-TAB-01 | Tablolar hücre ızgarası olarak çıkarılır: satır, sütun, birleşik hücre kapsamı, sütun/satır başlığı ve bölüm satırı rolü, dipnot, sayfa ve koordinat; çizgili ve kenarlıksız tablolar | Kullanıcı 2026-10-23, TK 5.4 |
+| R-TAB-02 | Her sayısal tablo hücresinden kaynak hücreye bağlı bir olgu üretilir: değer, birim (hücre > sütun > satır > tablo başlığı), ölçek çarpanı, satır ve sütun yolu, dönem, eksik değer ve dipnot işareti | Kullanıcı 2026-10-23, ADR-004 |
+| R-TAB-03 | Sayfa sonunda bölünen tablo devamıyla birleştirilir; tekrarlanan başlık satırı atılır | KL-02 |
+| R-TAB-04 | Grafik ve şekiller bulunur; veri yalnızca grafikte yazılı etiketten (kesin) okunur, okunamayan grafik açıkça işaretlenir, değer tahmin edilmez | Kullanıcı 2026-10-23 |
+| R-TAB-05 | Tablo çıkarımı insan altın kümesine karşı tespit, yapı (GriTS) ve olgu düzeyinde ölçülür | Kullanıcı 2026-10-23, B14 |
 | R-ETK-01 | Paragraf × madde etiketleri kılavuza göre üretilir, doğrulanır; uyum ağırlıklı κ ile ölçülür | S-11, B5, B6 |
 | R-ETK-02 | Altın test kümesi insan onaylıdır, dondurulur ve değişmezliği otomatik doğrulanır | B11 |
 | R-GAP-01 | Her madde için karşılandı / kısmi / eksik kararı verilir | Form hedef 2 |

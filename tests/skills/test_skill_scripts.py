@@ -511,3 +511,121 @@ def test_skill_scripts_have_no_untracked_copies():
     names = [p.name for p in (ROOT / ".claude/skills").rglob("scripts/*.py")]
     assert len(names) == len(set(names))
     assert shutil.which("python3") or shutil.which("python")
+
+
+# ---------- table-extract, figure-extract, table-eval (S28) ----------
+
+
+def _tablo_kaydi(tid="x-2025-t001-01", sayfa=1, motor="pymupdf", uyarilar=()):
+    return {
+        "tablo_id": tid, "rapor_id": "x-2025", "sayfalar": [sayfa], "parcalar": [{"sayfa": sayfa, "bbox": [0, 0, 1, 1]}],
+        "baslik": "Tablo 1", "dipnotlar": [], "birim": None, "satir_sayisi": 1, "sutun_sayisi": 1,
+        "hucreler": [], "motor": motor, "paragraf_id": None, "uyarilar": list(uyarilar), "sema_surumu": "tablo-0.1",
+    }  # fmt: skip
+
+
+def test_table_extract_tablo_ozeti_kacan_baslik_ve_ornek(tmp_path, capsys):
+    oz = load("table-extract", "tablo_ozeti")
+    tablolar = [
+        _tablo_kaydi("x-2025-t001-01", 1),
+        _tablo_kaydi("x-2025-t003-01", 3, "pymupdf-bosluk", ["kenarliksiz_sezgisel"]),
+    ]
+    olgular = [{"birim": "t", "donem": "2024", "eksik": False}, {"birim": None, "donem": None, "eksik": True}]
+    metin = oz.ozet(tablolar, olgular, baslikli=[1, 2, 3], ornek=1, seed=43)
+    assert "tablosu bulunmayan: [2]" in metin
+    assert "birimli %50,0" in metin and "kenarliksiz_sezgisel" in metin
+    assert metin.count("| x-2025-t00") == 1  # örneklem 1
+    (tmp_path / "tables.jsonl").write_text("".join(json.dumps(t) + "\n" for t in tablolar), encoding="utf-8")
+    assert oz.main([str(tmp_path)]) == 0
+    assert "Tablo: 2" in capsys.readouterr().out
+    assert oz.main([str(tmp_path / "yok")]) == 1
+
+
+def test_figure_extract_sekil_ozeti(tmp_path, capsys):
+    oz = load("figure-extract", "sekil_ozeti")
+    sekiller = [
+        {"sekil_id": "x-g002-01", "sayfa": 2, "tur": "grafik", "baslik": "Şekil 6: Kredi", "veri_durumu": "vektor_etiket",
+         "eslesmeyen_etiket": 0, "veri": [{"kategori": "Enerji", "seri": "2025", "deger": 5.0, "ham": "5", "bbox": None}]},
+        {"sekil_id": "x-g004-01", "sayfa": 4, "tur": "sekil", "baslik": "", "veri_durumu": "goruntu_veri_yok",
+         "eslesmeyen_etiket": 0, "veri": []},
+    ]  # fmt: skip
+    metin = oz.ozet(sekiller, baslikli=[2, 7])
+    assert (
+        "Enerji/2025=5" in metin and "şekil kaydı olmayan: [7]" in metin and "`goruntu_veri_yok`: 1" in metin
+    )
+    yol = tmp_path / "figures.jsonl"
+    yol.write_text("".join(json.dumps(s, ensure_ascii=False) + "\n" for s in sekiller), encoding="utf-8")
+    assert oz.main([str(yol)]) == 0 and "Kayıt: 2" in capsys.readouterr().out
+
+
+def test_table_eval_altin_donustur_birlesik_hucre_ve_olgu(tmp_path, capsys):
+    dn = load("table-eval", "altin_donustur")
+    csv_yolu = tmp_path / "t.csv"
+    csv_yolu.write_text(
+        "﻿Kapsam;Emisyon (tCO2e);<\n^;2024;2025\nKapsam 1;12.450;13.100\nKapsam 2;31.200;-\n", encoding="utf-8"
+    )
+    out = tmp_path / "gold"
+    argv = [
+        str(csv_yolu),
+        "--rapor-id",
+        "k-2025",
+        "--sayfa",
+        "51",
+        "--baslik-satiri",
+        "2",
+        "--out-dir",
+        str(out),
+    ]
+    assert dn.main(argv) == 0
+    t = json.loads((out / "k-2025.tables.jsonl").read_text(encoding="utf-8"))
+    kapsam = next(h for h in t["hucreler"] if h["metin"] == "Kapsam")
+    emisyon = next(h for h in t["hucreler"] if h["metin"] == "Emisyon (tCO2e)")
+    assert (kapsam["satir_kapsam"], emisyon["sutun_kapsam"], t["motor"]) == (2, 2, "insan")
+    assert (
+        validate_file(out / "k-2025.tables.jsonl") == [] and validate_file(out / "k-2025.facts.jsonl") == []
+    )
+    olgular = [json.loads(s) for s in (out / "k-2025.facts.jsonl").read_text(encoding="utf-8").splitlines()]
+    assert {(o["satir_yolu"][-1], o["donem"], o["deger"]) for o in olgular} == {
+        ("Kapsam 1", "2024", 12450),
+        ("Kapsam 1", "2025", 13100),
+        ("Kapsam 2", "2024", 31200),
+        ("Kapsam 2", "2025", None),
+    }
+    assert dn.main(argv) == 0  # aynı tablo tekrar: yerine yazılır, çoğalmaz
+    assert len((out / "k-2025.tables.jsonl").read_text(encoding="utf-8").splitlines()) == 1
+    csv_yolu.write_text("A;B\n<;x\n", encoding="utf-8")
+    assert dn.main(argv) == 1 and "ilk sütunda" in capsys.readouterr().err
+
+
+def test_table_eval_bulgu11_ondalik_virgullu_csv_ayraci(tmp_path):
+    dn = load("table-eval", "altin_donustur")
+    yol = tmp_path / "t.csv"
+    yol.write_text("Gösterge;Değer\nIsıtma, soğutma;12,5\nAydınlatma, diğer;3,4\n", encoding="utf-8")
+    assert dn.csv_oku(yol) == [
+        ["Gösterge", "Değer"],
+        ["Isıtma, soğutma", "12,5"],
+        ["Aydınlatma, diğer", "3,4"],
+    ]
+
+
+def test_table_eval_bulgu11_excel_cp1254_csv(tmp_path):
+    dn = load("table-eval", "altin_donustur")
+    yol = tmp_path / "t.csv"
+    yol.write_bytes("Gösterge;Değer\nIşık;12,5\n".encode("cp1254"))
+    assert dn.csv_oku(yol)[1] == ["Işık", "12,5"]
+
+
+def test_table_extract_bulgu15_stdout_cp1254(tmp_path):
+    """Windows'ta yönlendirilen çıktı cp1254 olabilir; '→' ve '₂' yazılırken çökmemeli."""
+    import io
+    import sys
+
+    oz = load("table-extract", "tablo_ozeti")
+    t = _tablo_kaydi() | {"baslik": "Tablo 1: CO₂ → emisyon"}
+    (tmp_path / "tables.jsonl").write_text(json.dumps(t, ensure_ascii=False) + "\n", encoding="utf-8")
+    eski = sys.stdout
+    sys.stdout = io.TextIOWrapper(io.BytesIO(), encoding="cp1254")
+    try:
+        assert oz.main([str(tmp_path)]) == 0
+    finally:
+        sys.stdout = eski

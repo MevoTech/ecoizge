@@ -25,7 +25,7 @@ PLACEHOLDER = re.compile(r"\{\{KPI:(?P<kpi>[a-z0-9_]+):(?P<yil>\d{4}):(?P<tur>ge
 CITATION = re.compile(r"\[\d+(?:\s*,\s*\d+)*\]")
 # Değer olmayan, ad parçası sayılar: "Kapsam 1", "TSRS 2", "GRI 305", "ISO 14001", "madde 29(a)"
 IDENTIFIER = re.compile(
-    r"\b(?:Kapsam|Scope|TSRS|GRI|ESRS|ISO|SKA|SDG|madde|paragraf)\s*-?\s*\d+[a-z]?(?:\([a-z0-9]+\))*",
+    r"\b(?:Kapsam|Scope|Kategori|Category|TSRS|GRI|ESRS|ISO|SKA|SDG|madde|paragraf)\s*-?\s*\d+[a-z]?(?:\([a-z0-9]+\))*",
     flags=re.IGNORECASE,
 )
 SENTENCE_END = re.compile(r"(?<=[.!?])\s+")

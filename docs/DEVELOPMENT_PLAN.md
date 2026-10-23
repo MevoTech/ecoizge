@@ -28,6 +28,7 @@ F1  S01 ─┬─ S02 (🔒) ─────────────────
          ├─ S06 (🔒) ─ S09 ─ S10 ─────────────┤
          ├─ S07 ─┐                            │
 S03 ─ S04 ───────┴─ S05 ─┬─ S12 (🔒) ─────────┤
+      S04 ─ S28 (tablo/grafik) ─ S13, S18
                          ├─ S13 ─ S17 (🔒) ─ S18 (🔒)
                          ├─ S14 ─ S16         │
                          └─ S19               │
@@ -110,6 +111,25 @@ Teknik gerekçe: S05 etiket üretmeden S12–S14, S19 ölçülemez. S08'deki kar
 - **Kabul:** 20 sayfada hata türleri sayılmış. Kütüphane seçimi ölçümle ADR'ye yazılmış. Çıktı şeması testli.
 - **Doğrulama:** `python -m pytest -q tests/pipelines services/review-ui/tests`; `python pipelines/extract.py <pdf> --rapor-id <id> --out <jsonl>`; `streamlit run services/review-ui/app.py`.
 - **Geri dönüş:** Çıkarım kodu değişirse etiketli raporlar yeniden çıkarılmadan önce kimlik eşlemesi yapılır (pdf-extract Tuzaklar: "Kimlik kayması").
+
+## S28: Tablo ve grafik çıkarımı: ızgara, olgu, şekil ve ölçüm · M · F1
+- **Durum:** 🟨
+- **Sorumlu:** `ml-engineer` · **Skill'ler:** `table-extract`, `figure-extract`, `table-eval` · **Gereksinimler:** R-TAB-01, R-TAB-02, R-TAB-03, R-TAB-04, R-TAB-05 · **Bağımlılık:** S04.T1
+- **Amaç:** Tabloyu düz metin yerine hücre ızgarası olarak çıkarmak, sayısal hücreleri kaynağa bağlı olgulara çevirmek, grafikteki yazılı veriyi okumak ve bunları altın kümeyle ölçmek.
+- **Girdi:** Kullanıcı isteği (2026-10-23: "tablolar ve içindeki veriler ayrışıyor mu"); [docs/research/tablo-grafik-cikarimi.md](research/tablo-grafik-cikarimi.md); ADR-014; 4 pilot raporu.
+- **Görevler:**
+  - T1 ✅ Şema ve değişmezler `tools/tablo_kurallari.py` (`tablo-0.1`, `olgu-0.1`, `sekil-0.1`; ızgara bütünlüğü); `validate_data.py` tables/facts/figures.
+  - T2 ✅ `pipelines/tables.py`: `find_tables` ızgarası (birleşik hücre kapsamı), başlık rolleri, "Tablo N" çapalı kenarlıksız sezgi, sayfalar arası birleştirme (KL-02), çıkarım hatası uyarıları (`baslikta_sayisal_veri`, `icindekiler_olasi`).
+  - T3 ✅ Olgular: `verify/numbers.py` `hucre_degeri`, `birim_bul`, `birimler_bul`, para birimleri; birim önceliği ve dönem; `ton CO₂` hatasının düzeltilmesi.
+  - T4 ✅ `pipelines/figures.py`: ortak tabanlı çubuk grupları, etiket → çubuk → kategori/seri eşlemesi; görüntü grafikte veri yok işareti.
+  - T5 ✅ Docling uyarlayıcısı (`docling_tablosu`, resim sınıfları) ve `pipelines/structure.py`; 4 raporda iki motorla koşu.
+  - T6 ✋ U-16: altın tablo kümesi (rapor başına 5, toplam 20 tablo; `table-eval` Adımlar 1) ve altın olguların birim/dönem kontrolü.
+  - T7 ⬜ İki motorun ölçümü (tespit, GriTS_Con/Top, olgu F1; `evaluator`) ve varsayılan motor ADR'si. T6'ya bağlı.
+  - T8 ⬜ Görüntü grafikler ve yazısı çizime çevrilmiş grafikler için deneme (Docling `do_chart_extraction` / OCR), yalnızca `yaklasik` işaretli ve ölçülerek (KL-14).
+- **Çıktılar:** `tables.jsonl`, `facts.jsonl`, `figures.jsonl`; üç skill; ölçüm aracı; ADR-014; araştırma notu.
+- **Kabul:** Şema değişmezleri ve doğrulayıcı testli. Gerçek raporlarda şema/olgu hatası 0. Kaçırılan "Tablo N" sayfaları ve uyarılar raporlanmış. Altın kümede tespit, GriTS ve olgu F1 iki motor için ölçülmüş ve motor kararı ADR'ye yazılmış.
+- **Doğrulama:** `python -m pytest -q tests/pipelines tests/tools/test_tablo_olcum.py services/report-service/tests`; `python pipelines/structure.py <pdf> --rapor-id <id> --out-dir <dizin> [--motor docling]`; `python tools/validate_data.py <dizin>/tables.jsonl <dizin>/facts.jsonl <dizin>/figures.jsonl`; `python tools/tablo_olcum.py ... --run-id <id>`.
+- **Geri dönüş:** `paragraphs.jsonl` ve etiket kimlikleri değişmez; yeni dosyalar silinerek geri alınır. Şema değişirse sürüm yükselir (`tablo-0.2`), eski kayıtlar silinmez.
 
 ## S05: Pilot etiketleme, κ ve kılavuz v1 · M · F1
 - **Durum:** 🟨

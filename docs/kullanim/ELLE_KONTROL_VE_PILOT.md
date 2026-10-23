@@ -155,6 +155,26 @@ Sonra ben şunları yaparım:
 2. κ'yı ve anlaşmazlık listesini çıkarırım.
 3. Kılavuz v1 önerisini sana onaya getiririm.
 
+## 5a. Altın tablo kümesi (U-16, pilot bittikten sonra)
+
+Tablo çıkarımının doğruluğunu ölçmek için 20 tabloyu senin elle yazman gerekir (rapor başına 5; en az 2'si kenarlıksız, 1'i iki sayfaya bölünmüş, 1'i birleşik başlıklı). Hangi tabloları seçeceğini sana listeyle getireceğim. Bu iş pilot etiketlemeden bağımsızdır; acelesi yok.
+
+Her tablo için:
+1. Excel'de yazmaya başlamadan **bütün hücreleri seç → sağ tık → Hücreleri Biçimlendir → Metin**. Yoksa Excel "12.450"yi sayıya, "1/2"yi tarihe çevirir ve CSV'ye "12450" yazar.
+   Sonra PDF'i aç, tabloyu **PDF'te göründüğü gibi** yaz. Sayıların biçimine dokunma ("12.450,5" öyle kalır).
+2. Birleşik hücre: sağındaki kutuya `<`, altındaki kutuya `^` yaz. Örnek: "Emisyon (tCO2e)" iki sütunu kaplıyorsa yanındaki hücreye `<`.
+3. "CSV UTF-8 (virgülle ayrılmış)" olarak kaydet (Türkçe Excel `;` ile kaydeder, sorun değil).
+4. Anaconda Prompt'ta:
+   ```
+   cd C:\Users\mevog\Documents\ecoizge
+   conda activate ecoizge
+   python .claude/skills/table-eval/scripts/altin_donustur.py tablo.csv --rapor-id sirket-klimasan-2025 --sayfa 51 --baslik-satiri 1 --baslik "Tablo: 2024-2025 Karşılaştırmalı Sera Gazı Emisyonları" --out-dir data/gold/tables
+   ```
+   `--sayfa` PDF'in sayfa numarasıdır (Akbank'ta bir PDF sayfası iki basılı sayfadır). `--baslik-satiri`, üstteki başlık satırı sayısıdır.
+5. Komut her sayının satırını, sütununu, birimini ve dönemini yazar. PDF'le karşılaştır; yanlışsa CSV'yi düzeltip komutu tekrar koş (aynı tablo yerine yazılır).
+
+Bitince bana **"altın tablolar bitti"** yaz. Ben iki motoru (PyMuPDF ve Docling) bu tablolara karşı ölçüp sonucu ve motor önerisini getiririm.
+
 ## 6. Sorun giderme
 
 | Belirti | Çözüm |

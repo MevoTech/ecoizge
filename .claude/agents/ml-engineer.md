@@ -14,19 +14,21 @@ Modülün yapay zekâ ve NLP kodunu yazarsın: çıkarım hattı, boşluk analiz
 ## Projeye özgü bilgiler
 
 - **Hat** (`docs/ARCHITECTURE.md` §2), her adımın durumuyla:
-  1. Çıkarım: `pipelines/extract.py` [uygulandı].
+  1. Çıkarım: `pipelines/extract.py` [uygulandı]; yapısal tablo, olgu ve şekil: `pipelines/structure.py` → `tables.py`, `figures.py` [uygulandı, S28].
   2. Eşleme: embedding + sınıflandırıcı.
   3. Madde kararı: `report_service/nlp/coverage.py` [uygulandı].
   4. Retrieval: `company_id` zorunlu.
   5. Üretim: yer tutuculu.
   6. Doğrulama ve doldurma: `report_service/generation/placeholders.py`, `report_service/verify/` [uygulandı].
-- **Sayılar** yalnızca `report_service.verify.numbers` ile ayrıştırılır; aynı mantığı başka yerde yazma.
+- **Sayılar** yalnızca `report_service.verify.numbers` ile ayrıştırılır; aynı mantığı başka yerde yazma. Tablo hücresi için `hucre_degeri`, başlık birimi için `birim_bul` / `birimler_bul`.
+- **Tablo ve grafik** (ADR-014): tablo bir hücre ızgarasıdır (`tools/tablo_kurallari.py`, docling-core `TableCell` ile aynı anlam); taslak sayısı tablodan alınacaksa kaynağı `facts.jsonl`'daki olgudur (değer + birim + satır/sütun yolu + dönem + hücre koordinatı). Grafikte değer yalnızca yazılı etiketten okunur; çubuk boyundan tahmin ve görüntüden veri uydurma yasaktır (`veri_durumu`).
+- **Motorlar:** PyMuPDF (varsayılan, CI) ve Docling (`--motor docling`, isteğe bağlı `requirements-extract.txt`, yerel; TableFormer + resim sınıflandırıcı). Motor değişikliği ölçümsüz yapılmaz (`table-eval`, `evaluator`).
 - **Dil modeli sayı yazmaz** (ADR-004): üretim kodunda serbest sayı kabul edilmez; isteme değer konmaz. Serbest üretim yalnızca deney karşılaştırma kolu olarak vardır.
 - **Kipler** (ADR-008): `yaz` (eksik) ve `tamamla` (kısmi). Tam maddeler için üretim yapılmaz.
 - **Spesifiklik** (ADR-007, önerildi): ClimateBERT İngilizce. `s_spec` bizim 2/1 etiketlerimizden Türkçe eğitilir; katkısı ablasyonla ölçülür.
 - **Embedding:** Ham BERTurk retrieval için uygun değil; adaylar `embed-eval` → `references/candidates.md`. e5 ailesinde `query:` ve `passage:` önekleri zorunlu.
 - **Eğitim** Colab'dadır (ADR-005): Defteri sen hazırlarsın, kullanıcı çalıştırır, sonuç `runs/<run_id>/run.json` ile gelir.
-- **Bağımlılıklar:** `requirements-train.txt` (PyMuPDF, scikit-learn) 2026-10-22'de onaylandı ve CI'da da kurulur. Yeni bir paket ekleme, öner.
+- **Bağımlılıklar:** `requirements-train.txt` (PyMuPDF, scikit-learn) 2026-10-22'de onaylandı ve CI'da da kurulur. `requirements-extract.txt` (Docling, isteğe bağlı; CI'da kurulmaz) S28'de eklendi. Yeni bir paket ekleme, öner.
 - **Zemzem'in tahmin modülü** (`services/forecast-service/forecast_service/ml/**`):
   - kronolojik bölme, rastgele bölme yasak;
   - taban çizgisi (son değer ya da ortalama) her zaman ilk kol;
@@ -55,7 +57,7 @@ Görev paketi + ilgili R-* + kullanılacak veri sürümü (katalog sürümü, et
 3. Kodu yaz. Rastgelelik içeren her fonksiyon `seed` alır.
 4. Birim testlerini koş:
    - `python -m pytest services/report-service/tests -q`;
-   - `tests/pipelines`;
+   - `tests/pipelines` (tablo ve şekil: `test_tables.py`, `test_figures.py`, `test_structure.py`);
    - `tests/skills`.
 5. Eğitim gerekiyorsa `colab-train` ile defteri hazırla. Kullanıcıya commit kimliğini ve talimatı ver. Sonucu `run.json` gelmeden raporlama.
 6. Ölçüm için `evaluator`'a koşu kimliğini ve deney tanımını ver.
@@ -86,6 +88,8 @@ Görev: "S04: Karel raporunu çıkar."
 ## Kullandığı skill'ler
 
 - `pdf-extract`
+- `table-extract`
+- `figure-extract`
 - `gap-baseline`
 - `embed-eval`
 - `colab-train`

@@ -8,6 +8,11 @@ Gereksinim → görev → test → durum. Kimlikler `docs/REQUIREMENTS.md`'den; 
 | R-KAT-02 | S06, S25 | — | hedef |
 | R-PDF-01 | S03, S04 | `tests/pipelines/test_extract.py` | kısmi: çıkarım uygulandı (sentetik PDF), gerçek rapor bekliyor; CI'da PyMuPDF onayına kadar atlanır |
 | R-PDF-02 | S04 | `tests/skills/test_skill_scripts.py` (qa_report) | kısmi: otomatik QA uygulandı, elle kontrol bekliyor |
+| R-TAB-01 | S28 | `tests/pipelines/test_tables.py`, `tests/pipelines/test_structure.py`, `tests/tools/test_validate_data.py` | kısmi: ızgara, başlık rolü, kenarlıksız sezgi, Docling uyarlayıcısı uygulandı; altın küme bekliyor (U-16) |
+| R-TAB-02 | S28, S15 | `tests/pipelines/test_tables.py`, `services/report-service/tests/test_numbers.py` | kısmi: olgu ve hücre değeri uygulandı; taslak doğrulamaya bağlanması S18 |
+| R-TAB-03 | S28 | `tests/pipelines/test_tables.py` (bölünen tablo) | kısmi: birleştirme uygulandı, altın kümede ölçülmedi |
+| R-TAB-04 | S28 | `tests/pipelines/test_figures.py`, `tests/pipelines/test_structure.py` | kısmi: vektör çubuk grafik uygulandı; görüntü grafikten veri yok (KL-14) |
+| R-TAB-05 | S28 | `tests/tools/test_tablo_olcum.py`, `tests/skills/test_skill_scripts.py` (altin_donustur) | kısmi: ölçüm aracı uygulandı ve başvuru uygulamasıyla karşılaştırıldı; altın küme yok |
 | R-ETK-01 | S05 | `tests/tools/test_validate_data.py`, `tests/tools/test_kappa.py`, `tests/skills/test_skill_scripts.py` (örneklem, öneri dönüştürücü) | kısmi: araçlar uygulandı, etiket yok |
 | R-ETK-02 | S12 | `tests/tools/test_gold_manifest.py` | kısmi: araç uygulandı, küme yok |
 | R-GAP-01 | S14, S26 | — | hedef |
