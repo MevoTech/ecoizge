@@ -259,7 +259,7 @@ def olgular(t: dict) -> list[dict]:
                     "yil": hd.yil,
                     "satir_yolu": satir_yolu,
                     "sutun_yolu": sutun_yolu,
-                    "donem": _donem(sutun_yolu) or _donem(satir_yolu),
+                    "donem": hd.donem or _donem(sutun_yolu) or _donem(satir_yolu),
                     "sema_surumu": OLGU_SURUMU,
                 }
             )
@@ -355,15 +355,27 @@ def _hucre_metni(page, bbox) -> str:
 
 
 def _cizgi_izgarasi(page, table, sayfa: int) -> tuple[list[dict], int, int, int]:
-    """Hücre dikdörtgenlerinden ızgara: kenarlar kümelenir, her hücre kapladığı aralığa yerleşir."""
-    kutular = list(dict.fromkeys(tuple(c) for c in table.cells if c))
+    """Hücre dikdörtgenlerinden ızgara: kenarlar kümelenir, her hücre kapladığı aralığa yerleşir.
+
+    find_tables bazen bütün tabloyu (ya da bir bloğu) saran çerçeve kutusunu da hücre olarak verir (Klimasan
+    2025 s. 44). En az iki başka kutuyu içine alan kutu çerçevedir: ızgaraya ve metne girmez. Kalan kutular
+    küçükten büyüğe yerleşir; çakışan ya da çok ince kutu atılır ve sayılır (`cizgi_hucre_atildi`).
+    """
+    ham = list(dict.fromkeys(tuple(c) for c in table.cells if c))
+
+    def icerir(d, k) -> bool:
+        return (
+            d != k and d[0] <= k[0] + 0.5 and d[1] <= k[1] + 0.5 and d[2] >= k[2] - 0.5 and d[3] >= k[3] - 0.5
+        )
+
+    kutular = [d for d in ham if sum(icerir(d, k) for k in ham) < 2]
     xs = _kumele([k[0] for k in kutular] + [k[2] for k in kutular])
     ys = _kumele([k[1] for k in kutular] + [k[3] for k in kutular])
     n, m = len(ys) - 1, len(xs) - 1
     dolu: set[tuple[int, int]] = set()
     hucreler = []
     atilan = 0
-    for k in sorted(kutular, key=lambda k: (k[1], k[0])):
+    for k in sorted(kutular, key=lambda k: ((k[2] - k[0]) * (k[3] - k[1]), k[1], k[0])):
         r0, r1 = _en_yakin(ys, k[1]), _en_yakin(ys, k[3])
         c0, c1 = _en_yakin(xs, k[0]), _en_yakin(xs, k[2])
         konumlar = {(r, c) for r in range(r0, r1) for c in range(c0, c1)}

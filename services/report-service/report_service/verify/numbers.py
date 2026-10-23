@@ -174,6 +174,7 @@ def format_tr(value: float, decimals: int = 0) -> str:
 _EKSIK = {"-", "–", "—", "--", "n/a", "na", "n.a.", "yok", "mevcut değil", "uygulanamaz", "hesaplanmadı"}
 _DIPNOT = re.compile(r"\s*(\*+|\(\d{1,2}\)|[¹²³⁴⁵⁶⁷⁸⁹⁰]+)$")
 _EKSI = "-−–"
+_DONEM_ONEKI = re.compile(r"^((?:19|20)\d{2})\s*:\s*")
 _HARF = "A-Za-zÇĞİÖŞÜçğıöşü"
 _BIRIM_ARAMA = re.compile(
     rf"(?<![{_HARF}\d])(?:(?P<scale>bin|milyon|milyar)\s+)?(?P<unit>{_UNIT})(?![{_HARF}])",
@@ -189,6 +190,7 @@ class HucreDegeri:
     eksik: bool = False
     dipnot: tuple[str, ...] = ()
     yil: bool = False
+    donem: str | None = None  # hücre içi dönem öneki: "2025: -42,78 milyon TL"
 
 
 def _tr_kucuk(s: str) -> str:
@@ -210,8 +212,13 @@ def hucre_degeri(metin: str) -> HucreDegeri | None:
         s = s[: m.start()].rstrip()
     if not s:
         return None
+    donem = None
+    if m := _DONEM_ONEKI.match(s):  # Klimasan 2025 s. 44: "2025: -42,78 milyon TL"
+        donem, s = m.group(1), s[m.end() :].strip()
+        if not s:
+            return None
     if _tr_kucuk(s) in _EKSIK:
-        return HucreDegeri(None, None, metin, eksik=True, dipnot=tuple(dipnot))
+        return HucreDegeri(None, None, metin, eksik=True, dipnot=tuple(dipnot), donem=donem)
     eksi = False
     if s.startswith("(") and s.endswith(")"):
         s, eksi = s[1:-1].strip(), True
@@ -229,7 +236,8 @@ def hucre_degeri(metin: str) -> HucreDegeri | None:
         q.unit,
         metin,
         dipnot=tuple(dipnot),
-        yil=q.is_year and not eksi,
+        yil=q.is_year and not eksi and donem is None,
+        donem=donem,
     )
 
 

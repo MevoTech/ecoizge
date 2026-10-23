@@ -51,6 +51,9 @@ Bir sürdürülebilirlik raporunun en yoğun bilgisi tablolardadır: emisyon, en
 
 - **Kenarlıksız tablo.** `find_tables` Klimasan 2025'te "Tablo N" başlıklı 34 sayfanın 13'ünde tablo bulamadı (s. 37 "Tablo 4"). Sezgisel `pymupdf-bosluk` motoru başlık çapasının altındaki bölgede sütunları başlık bandının yatay izdüşümünden, satırları dikey boşluklardan bulur; kalan 2 sayfa. Sezgi sıkı aralıklı satırları **tek satıra** birleştirebilir; uyarı `kenarliksiz_sezgisel`.
 - **Başlık satırı veriyi yuttu.** Klimasan 2025 s. 51'de PyMuPDF iki satırlık başlığı ve ilk veri satırını ("Kapsam 1 1.514,11 1.075,62") tek hücre yaptı: Kapsam 1 verisi kayboldu. Uyarı `baslikta_sayisal_veri`; bu hücreden birim alınmaz, birden çok yıl içerdiği için dönem boş kalır. Docling bu tabloyu doğru ayırdı.
+- **Çerçeve kutusu hücreleri yutuyordu.** `find_tables` bütün tabloyu saran kutuyu da hücre olarak verebiliyor; önce o yerleşince gerçek hücreler atılıyordu (4 raporda 180 hücre, Klimasan s. 44 finansal etki değerleri dahil). Çerçeve kutusu (≥ 2 kutuyu içine alan) ızgaraya girmez; uyarı `cizgi_hucre_atildi` sıfır olmalı.
+- **Windows'ta "-" yumuşak tire (U+00AD) gelir** (Arial); hücre metni `hucre_metni_temizle` ile düzeltilir. CI windows-latest bunu yakaladı.
+- **Dönem önekli hücre:** "2025: -42,78 milyon TL" → değer −42.780.000 TL, dönem 2025. Aralık ("-271,8 milyon TL ile -407,7 milyon TL") olgu değildir.
 - **İçindekiler tablosu.** Akbank, Derimod ve QUA Granite s. 2–3'teki içindekiler tablo olarak bulunur; sayfa numaraları olgu sanılırdı. Uyarı `icindekiler_olasi`; olgu üretilmez.
 - **Yıl hücresi nicelik değildir.** QUA Granite s. 42 "Hedef Yılı = 2035" satırdaki tCO2e birimini alıyordu; yıl hücresine birim verilmez (`yil: true`).
 - **`ton CO₂` birimi çöküyordu.** "e" eki olmayan CO₂ birimi `normalize_unit`'te ValueError veriyordu (Klimasan); düzeltildi, regresyon testi `test_r_ver_01_co2_e_eksiz_birim_cokmez`.

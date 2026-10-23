@@ -628,3 +628,49 @@ def test_r_tab_03_uc_sayfalik_zincir_tek_tabloya_birlesir():
 def test_r_tab_01_hucre_metni_windows_yazi_tipi_karakterleri(ham, beklenen):
     """Regresyon (2026-10-23, CI windows-latest, Arial): '-' hücresi yumuşak tire (U+00AD) olarak okunuyordu."""
     assert tb.hucre_metni_temizle(ham) == beklenen
+
+
+def test_r_tab_01_cerceve_hucresi_gercek_hucreleri_yutmaz(tmp_path):
+    """Regresyon (2026-10-23, Klimasan 2025 s. 44): find_tables bütün tabloyu saran bir çerçeve kutusunu da hücre
+    olarak veriyordu; önce o yerleşince gerçek hücreler (finansal etki değerleri) atılıyordu."""
+    doc = pymupdf.open()
+    page = doc.new_page(width=595, height=842)
+    for r, satir in enumerate([["Risk", "2025"], ["Siber saldırı", "-273,3 milyon TL"]]):
+        for c, m in enumerate(satir):
+            _yaz(page, 60 + c * 150, 115 + r * 20, m)
+
+    class Sahte:
+        cells = [
+            (50, 90, 400, 160),
+            (50, 100, 200, 120),
+            (200, 100, 350, 120),
+            (50, 120, 200, 140),
+            (200, 120, 350, 140),
+        ]
+
+    hucreler, n, m, atilan = tb._cizgi_izgarasi(page, Sahte, 1)
+    metinler = sorted(h["metin"] for h in hucreler if h["metin"])
+    assert "-273,3 milyon TL" in metinler and "Siber saldırı" in metinler
+    assert atilan == 0  # çerçeve kutusu hücre sayılmaz, uyarı gerektirmez
+
+
+def test_r_tab_02_hucre_ici_donem_oneki():
+    """Klimasan 2025 s. 44: hücreler '2025: -42,78 milyon TL' biçiminde (dönem + değer). Aralık ('… ile …') olgu değildir."""
+    t = _elle_tablo(
+        1,
+        [
+            ["Risk", "Mevcut finansal etki"],
+            ["Siber saldırı", "2025: -42,78 milyon TL"],
+            ["Tedarik", "2025: -271,8 milyon TL ile -407,7 milyon TL"],
+        ],
+    )
+    ozet = {o["satir_yolu"][-1]: o for o in tb.olgular(t)}
+    o = ozet["Siber saldırı"]
+    assert (o["deger"], o["birim"], o["donem"], o["ham"]) == (
+        -42_780_000,
+        "TL",
+        "2025",
+        "2025: -42,78 milyon TL",
+    )
+    assert "Tedarik" not in ozet
+    assert tk.olgu_hatalari(o, {t["tablo_id"]: t}) == []
