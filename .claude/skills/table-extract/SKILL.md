@@ -57,7 +57,7 @@ Bir sürdürülebilirlik raporunun en yoğun bilgisi tablolardadır: emisyon, en
 - **İçindekiler tablosu.** Akbank, Derimod ve QUA Granite s. 2–3'teki içindekiler tablo olarak bulunur; sayfa numaraları olgu sanılırdı. Uyarı `icindekiler_olasi`; olgu üretilmez.
 - **Yıl hücresi nicelik değildir.** QUA Granite s. 42 "Hedef Yılı = 2035" satırdaki tCO2e birimini alıyordu; yıl hücresine birim verilmez (`yil: true`).
 - **`ton CO₂` birimi çöküyordu.** "e" eki olmayan CO₂ birimi `normalize_unit`'te ValueError veriyordu (Klimasan); düzeltildi, regresyon testi `test_r_ver_01_co2_e_eksiz_birim_cokmez`.
-- **Bölünen tablo** (KL-02, Derimod s. 22→23, 25→26; Klimasan s. 29→35): ardışık sayfalar, alt/üst konum, aynı sütun sayısı ve sol kenarlar, devamın başlığı yok ya da aynı → birleşir; tekrarlanan başlık satırı atılır. Farklı başlıklı yeni tablo birleşmez.
+- **Bölünen tablo** (KL-02, Derimod s. 22→23, 25→26; Klimasan Tablo 1–4 zincirleri, ör. s. 37→41): ardışık sayfalar, alt/üst konum, aynı sütun sayısı ve sol kenarlar, devamın başlığı yok ya da aynı → birleşir; tekrarlanan başlık satırı atılır. Farklı başlıklı yeni tablo birleşmez.
 - **Birim önceliği:** hücre > sütun başlığı (en derin) > satır başlığı > tablo başlığı. "(Bin TL)" çarpan verir (`carpan: 1000`). İki farklı birim anan başlıktan birim alınmaz.
 - **Muhasebe gösterimi:** "(1.234)" eksi; "+19.202.635" artı işaretli; "-", "—", "n/a" **eksik** (sıfır değil).
 - **Kimlik kayması yok:** `paragraphs.jsonl` değişmez; pilot örneklemi ve kör etiketler ona bağlıdır.

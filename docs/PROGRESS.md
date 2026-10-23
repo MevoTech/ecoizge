@@ -104,6 +104,61 @@ Ayrıntılar [DECISIONS.md](DECISIONS.md)'de. Kabul edilenler: ADR-001…ADR-006
 
 En yeni kayıt en üstte. 2026-10-23 öncesi kayıtlar eski düzende tarih başlıklıydı; içerikleri olduğu gibi korunup aşama kimlikleriyle yeniden başlıklandırıldı.
 
+### S28: Tablo ve grafik çıkarımı: ızgara, olgu, şekil, ölçüm (2026-10-23)
+Kullanıcı isteği: "tablolar ve içindeki veriler ayrışıyor mu … bu yapıyı kurduğundan emin ol … alt ajan ve skilleri geliştir … skillerin GitHub reposunu bul". Dal `asama/S28-tablo-grafik`, PR #1 (taslak, CI için).
+
+- **Önceki durum (ölçüldü):**
+  - Tablo yalnızca düz metin birimiydi.
+  - Klimasan'da "Tablo N" başlıklı 34 sayfanın 13'ünde tablo bulunmuyordu.
+  - Bölünen tablolar birleşmiyordu; grafiklerden hiçbir şey okunmuyordu.
+- **Görev S28.T1 ✅** Şema `tablo-0.1` / `olgu-0.1` / `sekil-0.1`, ızgara değişmezi; `validate_data.py` yapısal dosyalar.
+  - Komut: `python -m pytest -q tests/tools/test_validate_data.py` → geçti.
+- **Görev S28.T2 ✅** `pipelines/tables.py`:
+  - ızgara ve birleşik hücre; başlık rolleri; kenarlıksız sezgi; sayfalar arası birleştirme;
+  - uyarılar; çerçeve kutusu ayıklama; hücre metni sözcük merkezinden.
+- **Görev S28.T3 ✅** Olgular:
+  - `numbers`: `hucre_degeri` (eksi, muhasebe ayracı, artı, eksik, dipnot, dönem öneki), `birim_bul`/`birimler_bul`, para birimi, önek para birimi;
+  - düzeltilen eski hatalar: "ton CO₂ " çökmesi ve "CO 2 e" alt simge.
+- **Görev S28.T4 ✅** `pipelines/figures.py`:
+  - ortak tabanlı çubuk grupları, küresel etiket–çubuk eşlemesi, lejant rengi → seri;
+  - görüntü grafikte veri yok işareti.
+- **Görev S28.T5 ✅** Docling uyarlayıcısı ve `pipelines/structure.py`; iki motorla 4 rapor (`run_id` s28-kapsama-2026-10-23).
+  - Rapor: [reports/experiments/s28-kapsama-2026-10-23.md](../reports/experiments/s28-kapsama-2026-10-23.md).
+  - 24 çıktı dosyasının hepsi `validate_data.py` OK.
+  - Kaçan "Tablo N" sayfası: PyMuPDF Klimasan 2 (s. 26, 62), Akbank 2 (s. 5, 35); Docling 0.
+  - Klimasan olguları: PyMuPDF 27 (16 birimli), Docling 27 (27 birimli). Akbank Şekil 6: 9/9 değer.
+  - Bu bir doğruluk ölçümü değildir (altın küme yok).
+- **GriTS doğrulaması:**
+  - `tools/tablo_olcum.py` Microsoft table-transformer `src/grits.py` (MIT, commit 16d124f) ile 300 rastgele ızgara çiftinde karşılaştırıldı.
+  - En büyük fark 0,00e+00 (betik bulut kapsayıcıda koşuldu; başvuru kodu depoya alınmadı).
+  - Kasıtlı bozma (yalnız köşegen hizalama) → test kırmızı.
+- **Bağımsız inceleme:** `code-reviewer`, [audits/S28-inceleme-2026-10-23.md](audits/S28-inceleme-2026-10-23.md).
+  - Bulgular: 1 kritik (yanlış birim, ×1000 hatalı değer), 12 önemli, 2 küçük. Hepsi için önce kırmızı test, sonra düzeltme.
+  - Gerçek veriyle ek 5 hata bulundu ve düzeltildi:
+    - çerçeve kutusu 4 raporda 180 hücreyi yutuyordu;
+    - Docling 0×0 tablo;
+    - birleştirme zinciri;
+    - Windows yumuşak tire;
+    - hücre sınırına taşan sözcük.
+- **Kalite kapısı:** `python tools/check_all.py` → 6/6 GEÇTİ; CI ubuntu-latest ve windows-latest (son commit'in sonucu PR #1'de).
+  - Windows'ta CI iki kez kırmızı oldu: Arial "-" karakterini U+00AD olarak kodluyor. İki düzeltme de regresyon testli.
+- **Skill ve ajanlar:**
+  - `table-extract`, `figure-extract` (`ml-engineer`), `table-eval` (`evaluator`);
+  - yetkinlik matrisi: "Bilgisayarlı görü" etkin;
+  - yönlendirme tablosuna "Tablo / grafik çıkarımı" satırı.
+  - Dış skill depoları: [docs/research/tablo-grafik-cikarimi.md](research/tablo-grafik-cikarimi.md) §4. anthropics/skills `pdf` özel lisanslı olduğundan kopyalanmadı. Docling resmî skill'i (MIT) `uvx library-skills --claude` ile bağlanabilir. PaddleOCR skill'i bulut API'si istiyor, kullanılmadı.
+- **Öz-denetim (AGENTS §7):**
+  - Gerçek veri: 4 kamu raporu (pilot gizli verisi değil); testler sentetik.
+  - Koşulamayan: altın kümeye karşı doğruluk (U-16 yok).
+  - Rapor bazında bölme ve altın küme yalıtımı: bu aşamada eğitim yok; `data/gold/tables` korumalı yol, yalnızca insan yazar.
+  - Türkçe: sayı ayrıştırma yalnızca `verify.numbers`'ta; TL/EUR ayrımı yapılıyor; "MİLYON" büyük harfi okunuyor.
+  - Belge kaynaklı talimat: hücre metni yalnızca veri; istem yok.
+  - Gizli veri: Docling yerel, belge dışarı gitmiyor.
+  - İnsan onayı atlanamıyor: altın küme ve motor kararı insanda.
+  - Windows: CI windows-latest'te iki gerçek fark bulundu ve düzeltildi.
+  - Sonuçlar `run_id` s28-kapsama-2026-10-23'e bağlı.
+- **Kalan:** S28.T6 ✋ U-16 altın tablo kümesi; T7 ölçüm ve D-09 kararı; T8 görüntü grafik denemesi (KL-14).
+
 ### S05, S07: Etiket şeması 0.1 (ADR-013), analiz ekranı ve bağımsız inceleme (2026-10-23)
 
 - **Kullanıcı isteği ve kararı.** Kullanıcı etiketleme sisteminin yetersiz ve analiz edilemez olduğunu söyledi. Sunulan üç seçenekten "çekirdek + 4 alan + analiz"i seçti (ADR-013). Etiketleme henüz başlamamıştı; bilgisayarında kör etiket dosyası yoktu.

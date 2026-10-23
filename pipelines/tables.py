@@ -45,7 +45,8 @@ DIPNOT_ARALIGI = 25.0
 KUMELEME_TOL = 2.0  # hücre kenarlarının aynı ızgara çizgisi sayılma toleransı (pt)
 BIRLESTIRME_ALT = 0.70  # önceki sayfadaki tablo sayfanın bu oranından aşağıda bitmeli
 BIRLESTIRME_UST = 0.35  # sonraki sayfadaki tablo bu orandan yukarıda başlamalı
-SUTUN_TOL = 15.0  # birleştirmede sütun sol kenarlarının farkı (pt)
+SUTUN_TOL = 15.0
+HUCRE_PAYI = 2.5  # hücre sözcüğü: merkezi kutunun en çok bu kadar dışında olabilir (pt); komşu hücre ~10 pt+  # birleştirmede sütun sol kenarlarının farkı (pt)
 
 
 # ---------- kayıt ----------
@@ -339,19 +340,36 @@ def _en_yakin(cizgiler: list[float], v: float) -> int:
 
 
 def hucre_metni_temizle(metin: str) -> str:
-    """Hücre metnini tek satıra indirir. Bölünemez boşluklar boşluk olur. Tek başına yumuşak tire (U+00AD)
-    tire işaretidir: Windows'ta Arial "-" karakterini böyle kodluyor (CI windows-latest, 2026-10-23). Sözcük
-    içindeki yumuşak tire silinir."""
+    """Hücre metnini tek satıra indirir; bölünemez boşluklar boşluk olur. Windows'ta Arial "-" karakterini
+    yumuşak tire (U+00AD) olarak kodluyor (CI windows-latest, 2026-10-23): küçük harfler arasındaki U+00AD
+    heceleme sayılıp silinir, diğerleri "-" olur ("−273,3" eksi işareti, "0-5 yıl")."""
     metin = " ".join(metin.translate(BOSLUKLAR).split())
-    if metin == YUMUSAK_TIRE:
-        return "-"
-    return re.sub(rf"(?<=\S){YUMUSAK_TIRE}(?=\S)", "", metin).replace(f" {YUMUSAK_TIRE} ", " - ")
+    # İki küçük harf arasında heceleme tiresidir, silinir; başka her yerde (sayının önünde, rakamlar ya da
+    # büyük harf ile rakam arasında, tek başına) yazı tipinin "-" karakteridir (CI windows-latest, Arial).
+    metin = re.sub(rf"(?<=[a-zçğıöşü]){YUMUSAK_TIRE}(?=[a-zçğıöşü])", "", metin)
+    return metin.replace(YUMUSAK_TIRE, "-")
+
+
+_SOZCUKLER: dict[int, tuple[object, list]] = {}
 
 
 def _hucre_metni(page, bbox) -> str:
-    import pymupdf
-
-    return hucre_metni_temizle(page.get_text("text", clip=pymupdf.Rect(bbox)))
+    """Merkezi hücre kutusunda kalan sözcükler, okuma sırasıyla. `get_text(clip=…)` kutunun dışına taşan harfi
+    keser ("11." → "1.", Klimasan 2025 s. 44); sözcük merkezine bakmak kesmez. Sözcükler sayfa başına bir kez
+    okunur. `table.extract()` kullanılmaz: Türkçe binlik ayracını bozar (pdf-extract Tuzaklar)."""
+    kayit = _SOZCUKLER.get(id(page))
+    if kayit is None or kayit[0] is not page:
+        kayit = (page, page.get_text("words"))
+        _SOZCUKLER.clear()
+        _SOZCUKLER[id(page)] = kayit
+    x0, y0, x1, y1 = bbox
+    pay = HUCRE_PAYI  # kenar çizgisinin hemen dışına taşan kısa sözcük ("9.") için yatay pay
+    secilen = [
+        w for w in kayit[1] if x0 - pay <= (w[0] + w[2]) / 2 <= x1 + pay and y0 <= (w[1] + w[3]) / 2 <= y1
+        and not (w[0] < x0 - pay and w[2] > x1 + pay)
+    ]  # fmt: skip
+    secilen.sort(key=lambda w: (w[5], w[6], w[7]))  # blok, satır, sözcük
+    return hucre_metni_temizle(" ".join(w[4] for w in secilen))
 
 
 def _cizgi_izgarasi(page, table, sayfa: int) -> tuple[list[dict], int, int, int]:

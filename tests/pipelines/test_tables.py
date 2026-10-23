@@ -623,6 +623,9 @@ def test_r_tab_03_uc_sayfalik_zincir_tek_tabloya_birlesir():
         ("sürdürüle\xadbilirlik", "sürdürülebilirlik"),
         ("12\xa0450", "12 450"),
         ("a\n b", "a b"),
+        ("\xad273,3 milyon TL", "-273,3 milyon TL"),  # CI windows-latest, 2026-10-23
+        ("0\xad5 yıl", "0-5 yıl"),
+        ("S\xad03", "S-03"),
     ],
 )
 def test_r_tab_01_hucre_metni_windows_yazi_tipi_karakterleri(ham, beklenen):
@@ -674,3 +677,19 @@ def test_r_tab_02_hucre_ici_donem_oneki():
     )
     assert "Tedarik" not in ozet
     assert tk.olgu_hatalari(o, {t["tablo_id"]: t}) == []
+
+
+def test_r_tab_01_hucre_sinirina_tasan_sozcuk_kesilmez(tmp_path):
+    """Klimasan 2025 s. 44: hücre kutusu ilk harfi kesiyordu ('11. Siber' → '1. Siber', 'Jeopolitik' → 'opolitik')."""
+    doc = pymupdf.open()
+    page = doc.new_page(width=595, height=842)
+    _yaz(page, 46, 115, "11. Siber Saldırı")  # ilk "1" tamamen kutunun solunda kalır
+    _yaz(page, 205, 115, "2025: -273,3 milyon TL")
+    _yaz(page, 46.5, 135, "9. Jeopolitik")  # "9." sözcüğünün merkezi de kutunun ~1 pt solunda
+
+    class Sahte:
+        cells = [(51.7, 100, 200, 120), (200, 100, 350, 120), (51.7, 120, 200, 140), (200, 120, 350, 140)]
+
+    hucreler, *_ = tb._cizgi_izgarasi(page, Sahte, 1)
+    sirali = sorted(hucreler, key=lambda h: (h["satir"], h["sutun"]))
+    assert [h["metin"] for h in sirali] == ["11. Siber Saldırı", "2025: -273,3 milyon TL", "9. Jeopolitik", ""]

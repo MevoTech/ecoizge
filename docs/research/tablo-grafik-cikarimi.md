@@ -8,12 +8,14 @@
 
 2026-10-23 öncesindeki `pipelines/extract.py` tabloyu "a | b" satırlarından oluşan tek bir metin birimi olarak veriyordu. 4 pilot raporda "Tablo N" başlığı geçen sayfalarla tablo bulunan sayfalar karşılaştırıldı (PROGRESS §4 S28):
 
-| Rapor | "Tablo N" başlıklı sayfa | Tablosu bulunmayan (önce) | Tablosu bulunmayan (S28, PyMuPDF + sezgi) |
-|---|---|---|---|
-| Klimasan 2025 | 34 | 13 | 2 (s. 26, 62) |
-| Akbank 2025 | 20 | 3 | 2 (s. 5, 35) |
-| Derimod 2025 | 3 | 0 | 0 |
-| QUA Granite 2025 | 7 | 0 | 0 |
+| Rapor | "Tablo N" başlıklı sayfa | Tablosu bulunmayan (önce) | S28, PyMuPDF + sezgi | S28, Docling |
+|---|---|---|---|---|
+| Klimasan 2025 | 34 | 13 | 2 (s. 26, 62) | 0 |
+| Akbank 2025 | 20 | 3 | 2 (s. 5, 35) | 0 |
+| Derimod 2025 | 3 | 0 | 0 | 0 |
+| QUA Granite 2025 | 7 | 0 | 0 | 0 |
+
+Ayrıntı: [reports/experiments/s28-kapsama-2026-10-23.md](../../reports/experiments/s28-kapsama-2026-10-23.md) (`run_id` s28-kapsama-2026-10-23).
 
 "Tablo bulundu" doğru yapı anlamına gelmez: Klimasan s. 51'de PyMuPDF iki satırlık başlığı ve ilk veri satırını tek hücre yaptı (Kapsam 1 verisi kayboldu); Docling aynı tabloyu 7×4 olarak doğru ayırdı ve 11 olgunun hepsine birim ve dönem verdi. Doğruluk ancak altın kümeyle ölçülebilir (S28.T6–T7).
 
@@ -22,7 +24,7 @@
 | Araç | Lisans | Tablo | Grafik | Not |
 |---|---|---|---|---|
 | PyMuPDF `find_tables` | AGPL-3.0 | Çizgili ve düzenli hizalı tablolar; hücre kutuları | — | Zaten bağımlılık (requirements-train). `table.extract()` Türkçe binlik ayracını bozar; hücre metni kutudan okunur |
-| [Docling](https://github.com/docling-project/docling) 2.142.1, docling-core 2.104.0 | MIT (kod); modeller CDLA-Permissive-2.0 / Apache-2.0 ([docling-models](https://huggingface.co/docling-project/docling-models), [layout-heron](https://huggingface.co/docling-project/docling-layout-heron), [DocumentFigureClassifier](https://huggingface.co/docling-project/DocumentFigureClassifier-v2.0)) | TableFormer (`TableFormerMode.ACCURATE`); hücre: `start/end_row/col_offset_idx`, `row/col_span`, `column_header`, `row_header`, `row_section`, `bbox` (docling-core `TableCell`) | Resim sınıflandırma (bar_chart, pie_chart, line_chart, flow_chart …); `do_chart_extraction` granite-vision ile bar/pie/line → tablo (yaklaşık, VLM); PowerPoint/Excel grafikleri `meta.tabular_chart` | Yerel. CPU 2 çekirdekte 4 raporun tamamı: Klimasan 65 sf 228 sn, Akbank 45 sf 174 sn. Kutu alt-sol orijinli olabilir (`to_top_left_origin`) |
+| [Docling](https://github.com/docling-project/docling) 2.142.1, docling-core 2.104.0 | MIT (kod); modeller CDLA-Permissive-2.0 / Apache-2.0 ([docling-models](https://huggingface.co/docling-project/docling-models), [layout-heron](https://huggingface.co/docling-project/docling-layout-heron), [DocumentFigureClassifier](https://huggingface.co/docling-project/DocumentFigureClassifier-v2.0)) | TableFormer (`TableFormerMode.ACCURATE`); hücre: `start/end_row/col_offset_idx`, `row/col_span`, `column_header`, `row_header`, `row_section`, `bbox` (docling-core `TableCell`) | Resim sınıflandırma (bar_chart, pie_chart, line_chart, flow_chart …); `do_chart_extraction` granite-vision ile bar/pie/line → tablo (yaklaşık, VLM); PowerPoint/Excel grafikleri `meta.tabular_chart` | Yerel. CPU 2 çekirdekte 4 raporun tamamı: Klimasan 65 sf 218 sn, Akbank 45 sf 201 sn (s28-kapsama-2026-10-23). Kutu alt-sol orijinli olabilir (`to_top_left_origin`) |
 | [PaddleOCR](https://github.com/PaddlePaddle/PaddleOCR) PP-StructureV3 | Apache-2.0 | Tablo hücre koordinatları, Markdown/JSON | PP-Chart2Table (grafik → tablo) | Paddle çerçevesi ek bağımlılık; denenmedi |
 | [Microsoft table-transformer](https://github.com/microsoft/table-transformer) | MIT | DETR tabanlı tablo tespiti ve yapısı; PubTables-1M | — | GriTS ölçütünün başvuru uygulaması (`src/grits.py`) |
 | Azure Document Intelligence | Ticari bulut | Var | — | Yeni harici servis ve hesap; pilot verisi gönderilemez (ADR-011). Değerlendirilmedi |
