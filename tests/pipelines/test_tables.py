@@ -692,4 +692,9 @@ def test_r_tab_01_hucre_sinirina_tasan_sozcuk_kesilmez(tmp_path):
 
     hucreler, *_ = tb._cizgi_izgarasi(page, Sahte, 1)
     sirali = sorted(hucreler, key=lambda h: (h["satir"], h["sutun"]))
-    assert [h["metin"] for h in sirali] == ["11. Siber Saldırı", "2025: -273,3 milyon TL", "9. Jeopolitik", ""]
+    assert [h["metin"] for h in sirali] == [
+        "11. Siber Saldırı",
+        "2025: -273,3 milyon TL",
+        "9. Jeopolitik",
+        "",
+    ]
