@@ -10,7 +10,15 @@ permissions:
 
 jobs:
   kalite-kapisi:
-    runs-on: ubuntu-latest
+    # Windows: kullanıcının makinesi (KL-08). İlk Windows koşusu Linux'ta görünmeyen bir çıkarım
+    # hatasını yakaladı (2026-10-23).
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+    runs-on: ${{ matrix.os }}
+    env:
+      PYTHONUTF8: "1"
     steps:
       - uses: actions/checkout@v5
       - uses: actions/setup-python@v6

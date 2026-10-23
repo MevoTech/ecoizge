@@ -9,53 +9,38 @@ Durum [../PROGRESS.md](../PROGRESS.md) §2.1'de izlenir.
 
 | İş | Süre (tahmin) | Çıktı |
 |---|---|---|
-| 1. Kurulum | 15–20 dk, bir kez | Depo ve Python ortamı |
+| 1. Kurulum | yapıldı (2026-10-23) | Depo ve Python ortamı |
 | 2. Arayüzü açma | 2 dk | Tarayıcıda "EcoIzge · Çalışma ekranları" |
 | 3. Çıkarım kontrolü | 20 sayfa × 2–3 dk ≈ 1 saat | `reports/experiments/extraction-qa-elle.csv` |
 | 4. Kör etiketleme | 50 paragraf × 2–4 dk ≈ 2–3 saat | `data/labels/blind/mehmet-gunes/pilot_v0.csv` |
 
 İşleri istediğin kadar parçaya bölebilirsin. Her kayıt anında diske yazılır; arayüzü kapatıp açınca kaldığın yerden devam edersin.
 
-## 1. Kurulum (U-01, bir kez)
+## 1. Kurulum (U-01): yapıldı
 
-Bilgisayarında Anaconda kurulu. Ayrı bir ortam açıp onu kullanacağız; diğer projelerin etkilenmez.
+Kurulum 2026-10-23'te senin bilgisayarında yapıldı ve kalite kapısı orada da 6/6 geçti (PROGRESS §4):
+- **Anaconda ortamı:** `ecoizge` (Python 3.11, git, poppler).
+- **Depo:** `C:\Users\mevog\Documents\ecoizge`.
 
-1. Başlat menüsünden **Anaconda Prompt**'u aç.
-2. Git kurulu mu bak:
-   ```
-   git --version
-   ```
-   "git is not recognized" yazarsa <https://git-scm.com/download/win> adresinden Git'i kur (varsayılan seçenekler yeterli), Anaconda Prompt'u kapatıp yeniden aç.
-3. Depoyu Belgeler klasörüne indir:
-   ```
-   cd %USERPROFILE%\Documents
-   git clone https://github.com/MevoTech/ecoizge
-   cd ecoizge
-   ```
-   GitHub giriş penceresi açılırsa MevoTech hesabınla giriş yap.
-4. Python ortamını kur:
-   ```
-   conda create -n ecoizge python=3.11 -y
-   conda activate ecoizge
-   pip install -r requirements-dev.txt
-   ```
-5. Kurulumu doğrula:
-   ```
-   python tools/check_all.py
-   ```
-   Son satırda `6/6 GEÇTİ` görmelisin. Görmezsen çıktının son 20 satırını bana gönder.
+Güncellemek ya da yeniden kurmak için `C:\Users\mevog\Documents\ecoizge\tools\windows\kurulum.bat` dosyasına çift tıkla. Pencere bitince sonucu yazar; ayrıntı aynı klasördeki `kurulum.log`'dadır.
 
-Rapor PDF'leri zaten `Belgeler\ecoizge-raporlar` klasöründe; arayüz onları kendiliğinden bulur.
+> Dosya Gezgini'nin sol menüsündeki "Documents" kısayolu bu bilgisayarda başka bir klasörü (OneDrive) gösteriyor. Depoyu orada arama; adres çubuğundaki yol `C:\Users\mevog\Documents` olmalı.
+
+Rapor PDF'leri `C:\Users\mevog\Documents\ecoizge-raporlar` klasöründe; arayüz onları kendiliğinden bulur.
 
 ## 2. Arayüzü açma (U-02)
 
-Her çalışma oturumunda:
+`C:\Users\mevog\Documents\ecoizge\tools\windows\arayuz.bat` dosyasına çift tıkla.
+- Siyah bir pencere açılır; arayüz çalıştığı sürece **o pencereyi kapatma**.
+- Birkaç saniye sonra tarayıcıda `http://localhost:8501` açılır. Açılmazsa adresi elle yaz.
+- İşin bitince siyah pencereyi kapat.
+
+Elle açmak istersen Anaconda Prompt'ta:
 ```
-cd %USERPROFILE%\Documents\ecoizge
 conda activate ecoizge
+cd %USERPROFILE%\Documents\ecoizge
 streamlit run services/review-ui/app.py
 ```
-Tarayıcı kendiliğinden `http://localhost:8501` adresini açar. Açmazsa adresi elle yaz. Kapatmak için Anaconda Prompt'ta `Ctrl+C`.
 
 **Başlangıç** ekranında:
 1. Sol menüdeki kutuya **adını soyadını** yaz (ör. `Mehmet Güneş`). Ad bir kez yazılınca diğer ekranlarda da dolu gelir.
@@ -133,8 +118,8 @@ Geri dönüp düzeltmek için sol menüdeki **Paragraf sırası** kutusuna numar
 ## 5. Bitince
 
 Sol menüde "Pilot bitti" yazısı çıkınca bana **"bitti"** yaz. İki dosyanı bilgisayarındaki depodan okurum, ayrıca bir şey göndermen gerekmez:
-- `Belgeler\ecoizge\data\labels\blind\mehmet-gunes\pilot_v0.csv`
-- `Belgeler\ecoizge\reports\experiments\extraction-qa-elle.csv`
+- `C:\Users\mevog\Documents\ecoizge\data\labels\blind\mehmet-gunes\pilot_v0.csv`
+- `C:\Users\mevog\Documents\ecoizge\reports\experiments\extraction-qa-elle.csv`
 
 İstersen depoya da gönder:
 ```
@@ -152,8 +137,8 @@ Sonra ben şunları yaparım:
 
 | Belirti | Çözüm |
 |---|---|
-| `conda` tanınmıyor | Komutları normal komut isteminde değil, **Anaconda Prompt**'ta çalıştır |
-| `streamlit` tanınmıyor | Önce `conda activate ecoizge` |
+| `arayuz.bat` açılıp hemen kapanıyor | `tools\windows\kurulum.bat`'ı çalıştır; sonuç TAMAM değilse `kurulum.log`'u bana gönder |
+| `conda` ya da `streamlit` tanınmıyor | Komutları **Anaconda Prompt**'ta, `conda activate ecoizge`'den sonra çalıştır |
 | "PDF bulunamadı" | PDF'ler başka klasördeyse Anaconda Prompt'ta `set ECOIZGE_RAPOR_DIR=C:\yol\ecoizge-raporlar`, sonra `streamlit run …` |
 | "… başka bir programda açık (Excel?)" | Dosyayı Excel'de kapat, **Kaydet**'e yeniden bas. Kaydın kaybolmaz |
 | "Pilot örneklem değişmiş" | Hiçbir şeye dokunma, bana yaz. Örneklem etiketleme başladıktan sonra değiştirilmez |

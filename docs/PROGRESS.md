@@ -57,8 +57,8 @@ Ayrıntılar [DECISIONS.md](DECISIONS.md)'de. Kabul edilenler: ADR-001…ADR-006
 
 | # | Eylem | Ne zaman | Ayrıntı |
 |---|---|---|---|
-| U-01 | Windows'ta Python 3.11+, Git ve depo kurulumu: `git clone https://github.com/MevoTech/ecoizge`, `pip install -r requirements-dev.txt` | U-02 öncesi | [kullanim/ELLE_KONTROL_VE_PILOT.md](kullanim/ELLE_KONTROL_VE_PILOT.md) §1 |
-| U-02 | Arayüzü aç ve dene: `streamlit run services/review-ui/app.py` | S07.T3 | Kılavuz §2; KL-08 |
+| U-01 | ✅ 2026-10-23, ajan yaptı (kullanıcının "ne gerekiyorsa kur" izniyle): Anaconda ortamı `ecoizge`, depo `C:\Users\mevog\Documents\ecoizge` | — | `tools/windows/kurulum.bat`; §4 |
+| U-02 | ✅ açılış 2026-10-23 ajan tarafından doğrulandı; kullanıcı `tools\windows\arayuz.bat` ile açar | — | Kılavuz §2 |
 | U-03 | Çıkarım kontrolü: 4 rapor × 5 sayfa = 20 sayfa | S04.T4 | Kılavuz §3 |
 | U-04 | Kör etiketleme: 50 paragraf | S05.T3 | Kılavuz §4 |
 | U-05 | D-01…D-06 kararları (ADR-007…012): kabul, değişiklik ya da ret | S08.T2 | [DECISIONS.md](DECISIONS.md) |
@@ -101,6 +101,36 @@ Ayrıntılar [DECISIONS.md](DECISIONS.md)'de. Kabul edilenler: ADR-001…ADR-006
 ```
 
 En yeni kayıt en üstte. 2026-10-23 öncesi kayıtlar eski düzende tarih başlıklıydı; içerikleri olduğu gibi korunup aşama kimlikleriyle yeniden başlıklandırıldı.
+
+### S04, S07: Windows kurulumu kullanıcının makinesinde, Windows'ta bulunan çıkarım hatası, D-08 (2026-10-23)
+
+- **Kullanıcının izni:** "ne gerekiyorsa kur, full kontrol sende" (2026-10-23).
+- **U-01 ✅ Kurulum.** Ajan kurulum betiğini yazdı (`tools/windows/kurulum.bat`) ve Dosya Gezgini'nden çalıştırdı. Bilgisayar denetimi yalnızca tıklamaya izin veriyor, terminale yazılamıyor.
+  - Anaconda ortamı `ecoizge` (conda-forge, `--override-channels`): Python 3.11.17, git 2.56.0, poppler.
+  - Depo `C:\Users\mevog\Documents\ecoizge`.
+  - `pip install -r requirements-dev.txt` geçti (PyMuPDF 2.0, Streamlit, scikit-learn).
+- **İlk Windows koşusu:**
+  - `python tools/check_all.py` → pytest 239 geçti, **2 başarısız** (`tests/pipelines/test_extract.py`).
+  - Neden: Windows'ta Arial ile üretilen test PDF'inde boşluklar U+00A0, satır sonu tiresi U+00AD olarak çıkıyor.
+  - Gerçek raporlarda da görülür: Akbank 2025'te bir paragrafta U+00A0 vardı.
+  - Düzeltme: `join_lines` bölünemez boşlukları boşluğa çevirir; satır sonundaki yumuşak tireyi tireleme sayar, satır içindekini siler. Önce birim testi kırmızı yazıldı.
+  - Pilot birimleri yeniden çıkarıldı:
+    - Derimod, Klimasan ve QUA Granite bayt bayt aynı (`cmp`).
+    - Akbank'ta yalnızca `sirket-akbank-2025-p020-36` değişti; bu paragraf örneklemde değil.
+    - Örneklem yeniden üretildi; SHA-256 aynı (`c180ccc1…`).
+- **İkinci Windows koşusu (commit 4def89d):** `python tools/check_all.py` → 6/6 GEÇTİ, 243 test geçti (46 sn). `s01-done` etiketi kullanıcının makinesinden GitHub'a gönderildi.
+- **U-02 / S07.T3 ✅** `tools/windows/arayuz.bat` ile arayüz kullanıcının makinesinde açıldı. Masaüstü uygulamasının tarayıcısıyla `http://localhost:8501` doğrulandı:
+  - Hazırlık denetiminde örneklem, birimler ve PDF klasörü ✅ (ad kullanıcıya kalıyor).
+  - Çıkarım kontrolünde Akbank 2025, s. 3 PDF görüntüsü çizildi.
+- **CI:** kalite kapısı işine `windows-latest` eklendi (KL-08 daraltıldı).
+- **D-08 ✅** `data/labels/blind/**` korumalı yollarda. Guard testi önce kırmızı (`tests/hooks`: 1 başarısız), sonra 53 geçti.
+- **Öz-denetim:**
+  - Gerçek ortam: kullanıcının Windows makinesi ve gerçek pilot verisi.
+  - Örneklem değişmedi; körleme korunuyor.
+  - Gizli veri okunmadı; kurulum yalnızca kamu deposu ve paket dizinlerine erişti.
+  - Disk: C: sürücüsünde 16,4 GB boş kaldı (önce 19,9 GB).
+- **Test edilemeyen:** gerçek Excel kilidi (KL-08).
+- **Not:** İndirilenler klasöründe, tarayıcıdan indirilmiş eski rapor PDF'leri duruyor (152 öğe). Silme izni istenmedi.
 
 ### S01, S04, S05, S07: Plan yapısı (noor uyarlaması), inceleme düzeltmeleri, kullanım kılavuzu (2026-10-23)
 

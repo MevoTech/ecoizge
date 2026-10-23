@@ -155,12 +155,12 @@ Teknik gerekçe: S05 etiket üretmeden S12–S14, S19 ölçülemez. S08'deki kar
 - **Görevler:**
   - T1 ✅ Etiket onay kuyruğu: onayla, düzelt, reddet; günlük; doğrulayıcı uyumu; AppTest.
   - T2 ✅ Türkçe menü (`st.navigation`), Başlangıç, Çıkarım kontrolü ve Kör etiketleme ekranları; ekranlar AppTest ve tarayıcıda çalıştırıldı.
-  - T3 ✋ U-02: Mehmet Windows'ta `streamlit run services/review-ui/app.py` ile açar ve dener.
+  - T3 ✅ Windows'ta kurulum ve açılış (`tools/windows/kurulum.bat`, `tools/windows/arayuz.bat`): kalite kapısı 6/6, ekranlar kullanıcının makinesinde açıldı, PDF sayfası çizildi (2026-10-23).
   - T4 ⬜ Koşu kuyruğu (`runs/*/run.json`) ve model kaydı durumu.
   - T5 ⬜ Toplu ön etiketleme: S05 sonrası kalan paragraflar için öneri → onay akışı.
   - T6 ⬜ Taslak kuyruğu (S17 ile).
 - **Çıktılar:** `services/review-ui/`.
-- **Kabul:** Her kuyruk AppTest ile testli. Mehmet kendi makinesinde açtı (U-02).
+- **Kabul:** Her kuyruk AppTest ile testli. Arayüz kullanıcının Windows makinesinde açıldı ve kalite kapısı orada geçti.
 - **Doğrulama:** `python -m pytest -q services/review-ui/tests`; `streamlit run services/review-ui/app.py`.
 - **Geri dönüş:** Arayüz yalnızca dosya okur ve yazar; veriler etkilenmeden önceki sürüme dönülür.
 
