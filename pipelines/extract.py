@@ -13,7 +13,8 @@ Yapılanlar, sırasıyla:
    normalleştirilerek) üst bilgi / alt bilgi sayılıp atılır.
 4. Gövde yazı boyutu (karakter ağırlıklı en sık boyut) bulunur; ≥ 1.15 katı, kısa ve nokta ile
    bitmeyen bloklar başlık sayılır ve sonraki birimlerin `bolum_basligi` alanına yazılır.
-5. Satır sonu tirelemesi birleştirilir ("sürdürüle-" + "bilirlik" → "sürdürülebilirlik").
+5. Satır sonu tirelemesi birleştirilir ("sürdürüle-" + "bilirlik" → "sürdürülebilirlik"); yumuşak
+   tire (U+00AD) ve bölünemez boşluklar (U+00A0 …) temizlenir.
 6. Metin katmanı olmayan sayfalar `ocr_gerekli` listesine yazılır (computer vision gerekir).
 """
 
@@ -43,17 +44,31 @@ def _norm(text: str) -> str:
     return re.sub(r"\d+", "#", re.sub(r"\s+", " ", text)).strip().lower()
 
 
+BOSLUKLAR = str.maketrans({"\xa0": " ", "\u202f": " ", "\u2007": " ", "\u2009": " "})
+YUMUSAK_TIRE = "\xad"
+
+
 def join_lines(lines: list[str]) -> str:
-    """Satırları birleştirir; satır sonu tirelemesini (küçük harfle devam) kaldırır."""
+    """Satırları birleştirir; satır sonu tirelemesini (küçük harfle devam) kaldırır.
+
+    Bölünemez boşluklar (U+00A0, U+202F …) boşluğa çevrilir. Yumuşak tire (U+00AD) satır sonunda
+    tireleme sayılır, satır içinde silinir. Bazı yazı tipleri (Windows'ta Arial) ve gerçek raporlar
+    boşluk ve tireyi bu karakterlerle kodluyor (2026-10-23).
+    """
     out = ""
-    for line in (s.strip() for s in lines):
+    for line in (s.translate(BOSLUKLAR).strip() for s in lines):
         if not line:
             continue
-        if out.endswith("-") and line[:1].islower():
+        yumusak = line.endswith(YUMUSAK_TIRE)
+        line = line.replace(YUMUSAK_TIRE, "")
+        if (out.endswith("-") or out.endswith(YUMUSAK_TIRE)) and line[:1].islower():
             out = out[:-1] + line
         else:
+            out = out.removesuffix(YUMUSAK_TIRE)
             out = f"{out} {line}" if out else line
-    return out
+        if yumusak:
+            out += YUMUSAK_TIRE
+    return out.removesuffix(YUMUSAK_TIRE)
 
 
 def _blocks(page) -> list[dict]:

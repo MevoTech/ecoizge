@@ -93,7 +93,7 @@ Kullanıcının vermesi gereken ya da henüz ADR'ye dönüşmemiş kararlar. Kap
 | D-05 | Veri sınıfları ve harici dil modeli | ADR-011 | S17 | açık (U-05) |
 | D-06 | İkinci insan etiketleyici, İngilizce veri setleri | ADR-012 | S05.T7, S16 | açık (U-05) |
 | D-07 | PDF kütüphanesi: PyMuPDF mi, pdfplumber mı | — (ölçüm S04.T6) | S04 kapanışı | açık |
-| D-08 | `data/labels/blind/**` korumalı yollara eklensin mi | — (`code-reviewer`, 2026-10-23) | — | açık, öneri: ekle |
+| D-08 | `data/labels/blind/**` korumalı yollara eklensin mi | — (`code-reviewer`, 2026-10-23) | — | kapandı: eklendi (Mehmet'in genel onayı, 2026-10-23) |
 
 ## Çelişki kaydı (C-xx)
 

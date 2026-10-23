@@ -4,6 +4,7 @@
     "data/gold/**",
     "data/labels/reviewed/**",
     "data/reviews/**",
+    "data/labels/blind/**",
     "data/raw/pilot/**",
     ".env",
     "**/.env",

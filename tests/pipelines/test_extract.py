@@ -69,6 +69,16 @@ def test_join_lines_hyphenation():
     assert join_lines(["Kapsam 1-", "Kapsam 2"]) == "Kapsam 1- Kapsam 2"  # büyük harfle devam: birleştirme
 
 
+def test_join_lines_bolunemez_bosluk_ve_yumusak_tire():
+    """Windows'ta (Arial, PyMuPDF 2.0) boşluklar U+00A0, satır sonu tiresi U+00AD geldi; iki test
+    kırmızıya döndü (2026-10-23, kullanıcının makinesi). Gerçek raporlarda da görülür."""
+    assert join_lines(["Komite\xa0üç\xa0ayda\u202fbir", "rapor\xa0alır"]) == "Komite üç ayda bir rapor alır"
+    assert join_lines(["sürdürüle\xad", "bilirlik"]) == "sürdürülebilirlik"
+    assert join_lines(["sürdürüle\xad ", "bilirlik"]) == "sürdürülebilirlik"
+    assert join_lines(["ekono\xadmik büyüme"]) == "ekonomik büyüme"
+    assert join_lines(["Kapsam 1\xad", "Kapsam 2"]) == "Kapsam 1 Kapsam 2"  # büyük harfle devam
+
+
 def test_r_pdf_01_headers_footers_removed(units):
     texts = [u["metin"] for u in units.units]
     assert not any("Karel Sürdürülebilirlik Raporu" in t for t in texts)

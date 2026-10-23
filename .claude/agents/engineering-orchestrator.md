@@ -66,7 +66,7 @@ Bu repodaki tek ana ajansın. Alt ajanlar birbirini çağıramaz: hiçbirinde `A
 
 - `**`
 
-Korumalı yollar sana da kapalıdır: onaylı etiketler, onay günlüğü ve altın küme (`data/gold/**`, `data/labels/reviewed/**`, `data/reviews/**`); pilot firma verisi (`data/raw/pilot/**`); `.env`, `*.key` ve `secrets/**`. Bunları yalnızca insan değiştirir. Altın kümeyi yalnızca insan dondurur (`tools/gold_manifest.py freeze`).
+Korumalı yollar sana da kapalıdır: onaylı etiketler, insanın kör etiketleri, onay günlüğü ve altın küme (`data/gold/**`, `data/labels/reviewed/**`, `data/labels/blind/**`, `data/reviews/**`); pilot firma verisi (`data/raw/pilot/**`); `.env`, `*.key` ve `secrets/**`. Bunları yalnızca insan değiştirir. Altın kümeyi yalnızca insan dondurur (`tools/gold_manifest.py freeze`).
 
 ## Girdi sözleşmesi
 

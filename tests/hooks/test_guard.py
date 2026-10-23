@@ -61,6 +61,7 @@ def test_allowed_writes(agent, path):
         ("annotation-assistant", "data/catalog/catalog_v1.csv", "yazma alanı dışında"),
         (None, "data/gold/test.csv", "korumalı"),
         ("engineering-orchestrator", "data/reviews/reviews.jsonl", "korumalı"),
+        ("engineering-orchestrator", "data/labels/blind/mehmet-gunes/pilot_v0.csv", "korumalı"),  # D-08
         ("ml-engineer", "docs/ARCHITECTURE.md", "yazma alanı dışında"),
         ("backend-engineer", "services/report-service/report_service/verify/x.py", "dışında"),
         ("test-engineer", "services/report-service/report_service/x.py", "dışında"),

@@ -51,7 +51,7 @@ Ayrıntılar [DECISIONS.md](DECISIONS.md)'de. Kabul edilenler: ADR-001…ADR-006
 |---|---|---|---|
 | D-01…D-06 | Açık (ADR-007…012 önerildi) | S02, S14, S16, S17, S19, S05.T7 | ✋ U-05 |
 | D-07 | Açık | S04 kapanışı | S04.T6 ölçümü, ardından ADR |
-| D-08 | Açık, öneri: ekle | — | ✋ Mehmet'in onayı (korumalı yol değişikliği) |
+| D-08 | Kapandı (2026-10-23): `data/labels/blind/**` korumalı | — | — |
 
 ### 2.1 Kullanıcı eylemleri listesi ✋
 
@@ -121,7 +121,7 @@ En yeni kayıt en üstte. 2026-10-23 öncesi kayıtlar eski düzende tarih başl
 - İnceleme (AK-G4): `code-reviewer`, commit 7b4ecaf.
   - Bulgular: 1 kritik, 6 önemli, 12 küçük. Rapor ve düzeltme durumu: [audits/S04-S05-S07-inceleme-2026-10-23.md](audits/S04-S05-S07-inceleme-2026-10-23.md).
   - 17 bulgu düzeltildi; her biri için önce kırmızı test yazıldı (`test_kor_qa.py`'de 16 test, `test_skill_scripts.py`'de 3 test).
-  - Açık kalan: bulgu 8 (D-08, korumalı yol, kullanıcı onayı). Bulgu 18 KL-05 olarak kaydedildi.
+  - Bulgu 8 (D-08) de kullanıcının genel onayıyla kapandı: `data/labels/blind/**` korumalı yollarda (guard testi önce kırmızı). Bulgu 18 KL-05 olarak kaydedildi.
   - En önemli düzeltme: kör etiketleme sürerken onay ekranı pilot paragraflarının önerilerini göstermiyor (R-03).
 - İnceleme sırasında bulunan: pilot örneklemi, rapor dosyalarının komut satırındaki sırasına bağlıydı. Yinelenen metinden hangi kopyanın kaldığı sıraya göre değişiyordu; 6 paragraf farklı çıkıyordu.
   - Düzeltme: birimler `paragraf_id`'ye göre sıralanıyor. Önce kırmızı test yazıldı.
